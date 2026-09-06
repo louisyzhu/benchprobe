@@ -83,6 +83,10 @@ an amendment changes the test's call, never its number.
   Ordinary-least-squares residual of every column on `days` (with intercept). The archive residualises
   the indicators and re-estimates the factor solution; handoff §2 says "date-residualisation of a
   factor", and this signature follows the archived computation (see `docs/decisions.md`).
+- `residualisation_drop_bootstrap(z, days, *, k: int = 3, B: int = 2000, seed: int = 42) -> DropBootstrap`
+  Resamples rows with replacement `B` times; on each draw recomputes `first_factor_share` before and
+  after `residualise_on_date` and records the drop (as a fraction). `.point` (the full-sample drop),
+  `.ci` (2.5th and 97.5th percentiles of the draws), `.draws`. The archive's H2(ii) check.
 - `date_r2(x, days, *, form: str = "ols") -> float`
   R² of a one-dimensional score vector on `days`. `form="ols"` is the archived computation;
   `form="logistic"` is the pre-registered functional form behind the paper's 0.505, whose exact
