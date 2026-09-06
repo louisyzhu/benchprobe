@@ -1,0 +1,42 @@
+{
+  "name": "one_capability_2026-07-06",
+  "description": "Analysis-ready model table behind 'One Capability or Many? Testing the Economic Validity of Frontier AI Evaluation' (arXiv:2608.29420): 421 model configurations, 12 primary benchmarks plus MMMU-Pro, with release date and model metadata.",
+  "files": {
+    "aa_analysis_models.csv": {
+      "sha256": "0c78f8c64b142825ce32df2caa6e86a8b051f9752da31ba84443c600d3a2d569",
+      "bytes": 137047,
+      "rows": 421,
+      "columns": 34
+    }
+  },
+  "source": {
+    "repository": "https://github.com/louisyzhu/frontier-ai-economic-validity",
+    "commit": "946ce84530d2893a241e4f148edde3e678968b11",
+    "path": "data/processed/aa_analysis_models.csv",
+    "licence": "CC BY 4.0 (derived data, per that repository's LICENSE-DATA)"
+  },
+  "upstream": [
+    {
+      "source": "Artificial Analysis — Models Leaderboard",
+      "url": "https://artificialanalysis.ai/leaderboards/models",
+      "extraction_timestamp_utc": "2026-07-06T15:17:51Z",
+      "sha256": "6f19f8f08befaaf14cb2d9952e379404c39f246b52d7ae4d1c2aa44795404de6",
+      "note": "Raw HTML snapshot, 4477421 bytes, redistributed only in the source repository under that site's terms; not vendored here. All capability figures in the table originate with Artificial Analysis."
+    },
+    {
+      "source": "Epoch AI — Notable AI Models",
+      "url": "https://epoch.ai/data/notable_ai_models.csv",
+      "extraction_timestamp_utc": "2026-07-06T15:19:56Z",
+      "sha256": "5e7e1550b5ba5a76efd35d2701a03250832514e81b6244de8e2d5fe5493b7671",
+      "licence": "CC BY 4.0",
+      "note": "Periphery and compute metadata; not vendored here."
+    },
+    {
+      "source": "aa_models_raw_parsed.csv (all 548 parsed configurations, source repository data/raw/)",
+      "sha256": "2d3ced9b3878f24b5005a9c7f84611be0bd6e3c866a47800b1040a10813a72f8",
+      "note": "Intermediate between the raw snapshot and the analysis table; not vendored here."
+    }
+  ],
+  "vendored_on": "2026-09-06",
+  "vendored_under_ticket": "T0"
+}
