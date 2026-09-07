@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# Run outputs (never committed; archived tables live in the source repositories)
+runs/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store

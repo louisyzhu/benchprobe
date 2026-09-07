@@ -1,0 +1,23 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Lockfile is current
+        run: uv lock --check
+      - name: Install (locked)
+        run: uv sync --locked
+      - name: Lint
+        run: uv run ruff check .
+      - name: Smoke test (rule 6: under a minute)
+        run: uv run pytest -m smoke
+      - name: Golden tests collect (never run here; they are run by ticket and pasted verbatim)
+        run: uv run pytest -m golden --collect-only -q
