@@ -62,6 +62,17 @@ def test_lobo_rejects_unknown_target_and_learner(grid):
         p.lobo(grid, targets=["mmmuPro"], learners="ridge")
     with pytest.raises(ValueError, match="unknown learner"):
         p.lobo(grid, targets=["tau2"], learners="svm")
+    with pytest.raises(ValueError, match="unknown learner"):
+        p.lobo(grid, targets=["tau2"], learners=["ridge", "svm"])
+
+
+def test_rung_subsets_are_checked_by_ladder_and_h4_table(grid):
+    r = p.lobo(grid, targets=["tau2"], learners="ridge", rungs=["ii_meanidx", "iv_kfac"], seed=0)
+    assert list(p.ladder(r, targets=["tau2"]).index) == ["ii_meanidx", "iv_kfac"]
+    with pytest.raises(ValueError, match="not in this result"):
+        p.h4_table(r, targets=["tau2"], B=5)
+    table = p.h4_table(r, baselines=("ii_meanidx",), targets=["tau2"], B=5)
+    assert len(table) == 2
 
 
 def test_rung_v_is_dropped_without_covariates(grid):

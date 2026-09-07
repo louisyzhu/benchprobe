@@ -233,6 +233,20 @@ def test_coverage_rules_are_a_fixed_point_on_the_vendored_table(snapshot):
     assert (kept["n_bench"] == snapshot.table["n_bench"].to_numpy()).all()
 
 
+def test_zscore_rejects_constant_columns():
+    frame = pd.DataFrame({"a": [1.0, 2.0, 3.0], "b": [5.0, 5.0, 5.0]})
+    with pytest.raises(ValueError, match="zero-variance"):
+        bio.zscore(frame, ["a", "b"])
+    z = bio.zscore(frame, ["a"])
+    np.testing.assert_allclose(z["a"].to_numpy(), [-1.2247449, 0.0, 1.2247449])
+
+
+def test_deduplicated_frame_keeps_base_as_its_last_column(snapshot):
+    frame = bio.build_grid(snapshot, "deduplicated").frame
+    assert frame.columns[-1] == "base"
+    assert list(frame.columns[:-1]) == [c for c in snapshot.table.columns]
+
+
 def test_coverage_rules_drop_what_they_should():
     table = pd.DataFrame(
         {"a": [1.0, 2.0, np.nan], "b": [1.0, np.nan, np.nan], "c": [np.nan, np.nan, np.nan]}

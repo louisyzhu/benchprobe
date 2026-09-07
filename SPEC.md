@@ -63,10 +63,12 @@ an amendment changes the test's call, never its number.
   release date in the *full* snapshot, integer; NaN only on the `economic_dense` coverage grid) and
   `.n`. An unknown grid name raises `ValueError` listing the known names.
 - Helpers, public because the grids are built from them and the thesis pipeline will reuse them:
-  `zscore(frame, columns, *, ddof=0)`, `days_since_earliest_release(frame, reference, *, strict=True)`,
+  `zscore(frame, columns, *, ddof=0)` (raises on a zero-variance column),
+  `days_since_earliest_release(frame, reference, *, strict=True)`,
   `base_model_key(name)` (the archive's regex, verbatim), `deduplicate_by_base_model(table)` (the
   archive's `sort_values("intelligenceIndex", descending).groupby("base").first()`, verbatim — see
-  `docs/decisions.md` T2 for what `first()` does), `benchmark_coverage(table, benchmarks, *,
+  `docs/decisions.md` T2 for what `first()` does; the result carries the `base` key as its last
+  column), `benchmark_coverage(table, benchmarks, *,
   min_models=60)` and `model_coverage(table, benchmarks, *, min_benchmarks=8)` (the archive's Phase 1
   inclusion rules), `sha256_of(path)`. Constants: `PRIMARY_BENCHMARKS`, `DENSE9_BENCHMARKS`,
   `ECONOMIC_BENCHMARKS`, `LABELS`, `BLOCKS`, `GRIDS`, `ENV_DATA_DIR`.
@@ -83,8 +85,10 @@ an amendment changes the test's call, never its number.
   benchmarks × `F1..Fk`), `.structure` (`ΛΦ`), `.phi` (factor correlations; identity when
   unrotated), `.uniquenesses`, `.ssl` (sum of squared pattern loadings per factor), `.weights`
   (Thurstone regression weights on the pattern loadings, `W = R⁻¹Λ` by pseudo-inverse), `.scores`
-  (regression factor scores `z @ R⁻¹S`, which is what `factor_analyzer.transform` computes and what
-  the archive's Task-1 date-R² uses; `S = Λ` when unrotated), `.signs`, `.k`, `.rotation`, `.method`.
+  (regression factor scores `z @ R⁻¹S`, computed explicitly as `factor_analyzer.transform` does but
+  without its silent fallback to `Λ` when `R` is singular — that case raises; `S = Λ` when
+  unrotated), `.signs`, `.k`, `.rotation`, `.method`. Result objects are frozen dataclasses with
+  identity equality (`eq=False`), since they hold DataFrames.
   The two weightings coincide when unrotated and differ under oblimin; the archive's LOBO path
   projects held-out rows with `W = R⁻¹Λ`, and each ticket keeps its archive's choice. With
   `align_to_mean_score`, each factor's sign is chosen so that its scores correlate positively with
@@ -94,7 +98,9 @@ an amendment changes the test's call, never its number.
   `predict.lobo` to project held-out rows.
 - `first_factor_share(z, *, k: int = 3) -> float`
   Share of common variance carried by the first factor of the *unrotated* `k`-factor ML solution:
-  `ssl[0] / ssl.sum()`, as a fraction in `[0, 1]`.
+  `ssl[0] / ssl.sum()`, as a fraction in `[0, 1]`, column 0 as the archive takes it; a
+  `RuntimeWarning` is raised if column 0 is not the largest factor (it is on every archive grid,
+  with the thinnest margin on the residualised `compute_known` grid, 4.78 vs 4.27).
 - `residualise_on_date(z, days) -> DataFrame`
   Ordinary-least-squares residual of every column on `days` (with intercept). The archive residualises
   the indicators and re-estimates the factor solution; handoff §2 says "date-residualisation of a
