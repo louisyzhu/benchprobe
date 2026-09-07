@@ -44,19 +44,33 @@ Agreed by the coordinating session so that `tests/golden/test_one_capability.py`
 Each is confirmed or amended by the ticket that implements it (T2 `io`, T3 `measure`, T4 `predict`);
 an amendment changes the test's call, never its number.
 
-**`benchprobe.io`** (T2)
+**`benchprobe.io`** (T2 — confirmed 6 September 2026, as implemented)
 
 - `load_snapshot(name: str = "one_capability_2026-07-06", *, data_dir: str | os.PathLike | None = None) -> Snapshot`
-  Loads the analysis-ready table named `name`, verifies its SHA-256 against `MANIFEST.json`, and
-  returns a `Snapshot` with `.name`, `.table` (DataFrame; `releaseDate` parsed to datetime), `.sha256`,
-  `.manifest` (the manifest as a dict) and `.provenance()` (a record of what was loaded, from where,
-  with which hash). `data_dir` defaults to the environment variable `BENCHPROBE_DATA_DIR`, then to the
-  copy vendored under `benchprobe/data/`. A hash mismatch raises; it is never downgraded to a warning.
+  Loads the table the snapshot's `MANIFEST.json` names in its `table` field, after verifying the
+  SHA-256 and size of every file the manifest lists; a mismatch, a missing file or a manifest whose
+  `name` differs from its folder raises `SnapshotIntegrityError` (never a warning). `Snapshot` carries
+  `.name`, `.table` (DataFrame; `releaseDate` parsed to datetime), `.sha256` (of the table file),
+  `.manifest`, `.origin` (`"vendored"`, `"env:BENCHPROBE_DATA_DIR"` or `"data_dir"`), `.loaded_at`
+  (UTC) and `.provenance()` (a JSON-serialisable record: snapshot, table, hash, size, shape, origin,
+  source, upstream hashes, load time, benchprobe version). `data_dir` defaults to
+  `$BENCHPROBE_DATA_DIR`, then to the copies vendored under `benchprobe/data/`. `list_snapshots()`
+  names the folders that would be searched.
 - `build_grid(snapshot: Snapshot, grid: str) -> Grid`
-  Builds one of the named grids in §3. `Grid` carries `.name`, `.frame` (the selected rows),
-  `.benchmarks` (column keys, archive order), `.labels` (key → display label), `.blocks` (key → taxonomy
-  block), `.z` (indicator matrix as a DataFrame), `.days` (integer days since the earliest release date
-  in the full snapshot, one per row) and `.n`.
+  Builds one of the named grids in §3. `Grid` carries `.name`, `.frame` (the selected rows, index
+  reset), `.benchmarks` (column keys, archive order), `.labels`, `.blocks`, `.z` (indicator matrix,
+  population SD over the grid's own rows, as the archive's `zmat`), `.days` (days since the earliest
+  release date in the *full* snapshot, integer; NaN only on the `economic_dense` coverage grid) and
+  `.n`. An unknown grid name raises `ValueError` listing the known names.
+- Helpers, public because the grids are built from them and the thesis pipeline will reuse them:
+  `zscore(frame, columns, *, ddof=0)`, `days_since_earliest_release(frame, reference, *, strict=True)`,
+  `base_model_key(name)` (the archive's regex, verbatim), `deduplicate_by_base_model(table)` (the
+  archive's `sort_values("intelligenceIndex", descending).groupby("base").first()`, verbatim — see
+  `docs/decisions.md` T2 for what `first()` does), `benchmark_coverage(table, benchmarks, *,
+  min_models=60)` and `model_coverage(table, benchmarks, *, min_benchmarks=8)` (the archive's Phase 1
+  inclusion rules), `sha256_of(path)`. Constants: `PRIMARY_BENCHMARKS`, `DENSE9_BENCHMARKS`,
+  `ECONOMIC_BENCHMARKS`, `LABELS`, `BLOCKS`, `GRIDS`, `ENV_DATA_DIR`.
+- Config-driven runs (§1) are deferred to T7.
 
 **`benchprobe.measure`** (T3)
 
@@ -150,7 +164,7 @@ will be new code under the T5 ticket.
 | `dense9` | rows complete on the nine near-universal benchmarks ("G2"; the twelve minus `gdpval_elo`, `terminalbenchV21`, `tauBanking`) | 409 |
 | `economic_dense` | rows carrying `gdpval_elo`, `terminalbenchV21` and `tauBanking` | 103 |
 | `deduplicated` | one row per base model (highest `intelligenceIndex` kept; base key strips reasoning/effort suffixes), then complete on all twelve | 89 |
-| `compute_known` | `complete_case` rows with a known compute proxy; matches non-null `totalParameters` (58) — confirmed at T3 by reproducing the archived shares | 58 |
+| `compute_known` | `complete_case` rows with non-null `totalParameters` (the compute proxy; the archived notebook does not build this subsample, T3 confirms by reproducing the archived shares) | 58 |
 
 **Rungs** of the LOBO ladder: `i_date` (standardised release date), `ii_meanidx` (mean of the
 standardised predictors, the general-index baseline), `iii_f1` (first factor score alone), `iv_kfac`

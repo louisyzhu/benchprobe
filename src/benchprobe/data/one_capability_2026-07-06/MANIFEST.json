@@ -1,6 +1,7 @@
 {
   "name": "one_capability_2026-07-06",
   "description": "Analysis-ready model table behind 'One Capability or Many? Testing the Economic Validity of Frontier AI Evaluation' (arXiv:2608.29420): 421 model configurations, 12 primary benchmarks plus MMMU-Pro, with release date and model metadata.",
+  "table": "aa_analysis_models.csv",
   "files": {
     "aa_analysis_models.csv": {
       "sha256": "0c78f8c64b142825ce32df2caa6e86a8b051f9752da31ba84443c600d3a2d569",

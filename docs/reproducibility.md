@@ -37,7 +37,7 @@ recomputed value from the ticket that computes it. "Archive file" is where the v
 | Ladder, single index (ii), best learner | complete_case, economic block | RMSE 0.474, R² 0.771 | lobo_rung_summary.csv | 0.005 each | not yet computed (slow: four learners) | — | T4 |
 | Ladder, k-factor (iv), best learner | same | RMSE 0.433, R² 0.808 | lobo_rung_summary.csv | 0.005 each | not yet computed (slow) | — | T4 |
 | Ladder, first factor alone (iii), best learner | same | RMSE 0.950 | lobo_rung_summary.csv | 0.005 | not yet computed (slow; platform-sensitive per archive README) | — | T4 |
-| Grid sizes | complete_case, deduplicated, compute_known, economic_dense | 96, 89, 58, 103 | task1_structure_results.json, dedup_r1_comparison.csv, subsample_date_compute.csv, archive README | exact | not yet computed | — | T2 |
+| Grid sizes | complete_case, deduplicated, compute_known, economic_dense | 96, 89, 58, 103 | task1_structure_results.json, dedup_r1_comparison.csv, subsample_date_compute.csv, archive README | exact | recomputed | 96, 89, 58, 103 (T2, `pytest -m golden -k grid_size`: 4 passed) | T2 |
 
 ## Seeds and random streams recovered from the archives
 
@@ -83,7 +83,9 @@ both values (rule 3) and decided at T3.
    rows lack at least one of the other nine. The archive's results files use n = 96 for both KMO
    (`n_G1`) and LOBO (`n_LOBO`), and the paper's text says "the $n=96$ complete-case grid"; the archive
    README's line "Economic-dense subset: 103 models … (Task-2 grid)" is the one surface that disagrees.
-   T2's grid tests encode both counts; the README wording is a finding for the coordinating thread.
+   Settled at T2: `build_grid` produces both (96 and 103), the golden grid rows pass, and
+   `tests/io/test_io.py::test_economic_dense_contains_the_complete_case_grid` pins the strict nesting.
+   The README wording is a finding for the coordinating thread.
 2. **Which of the twelve archived tables can be recomputed at all from the archived inputs?** The
    archive README lists twelve tables the notebook reads rather than derives. Two acceptance rows
    depend on values that exist only in those tables: the logistic-fit date-R² of 0.505 (the notebook
