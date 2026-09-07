@@ -129,6 +129,14 @@ class Snapshot:
     origin: str
     """``"vendored"`` or ``"env:BENCHPROBE_DATA_DIR"`` or ``"data_dir"`` (explicit argument)."""
     loaded_at: str
+    folder: Path
+    """The snapshot folder every manifest file was verified in."""
+
+    def file(self, name: str) -> Path:
+        """Path of a manifest-listed, hash-verified file of this snapshot."""
+        if name not in self.manifest.get("files", {}):
+            raise KeyError(f"{name!r} is not a file of snapshot {self.name!r}")
+        return self.folder / name
 
     def provenance(self) -> dict[str, Any]:
         """A record of what was loaded, from where, with which hash; serialisable as JSON."""
@@ -250,6 +258,7 @@ def load_snapshot(
         manifest=manifest,
         origin=origin,
         loaded_at=dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+        folder=folder,
     )
 
 

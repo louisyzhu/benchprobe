@@ -40,6 +40,19 @@ that computed it (T2 grids, T3 measure, T4 predict). "Archive file" is where the
 | Ladder, first factor alone (iii), best learner | same | RMSE 0.950 | lobo_rung_summary.csv | 0.005 | recomputed (elastic net; R² 0.1096 vs 0.110; the other two rungs the paper prints, i and v, give rf 0.7406 / R² 0.4587 and ridge 0.4382 / R² 0.8005 against 0.741 / 0.459 and 0.438 / 0.800) | RMSE 0.9503 | T4 |
 | Grid sizes | complete_case, deduplicated, compute_known, economic_dense | 96, 89, 58, 103 | task1_structure_results.json, dedup_r1_comparison.csv, subsample_date_compute.csv, archive README | exact | recomputed | 96, 89, 58, 103 (T2, `pytest -m golden -k grid_size`: 4 passed) | T2 |
 
+### JUDGe (T5)
+
+| Output | Archive value | Archive file | Tolerance | Tier | Recomputed | Ticket |
+|---|---|---|---|---|---|---|
+| Judged items | 180 of 210 | make_figures.load_bank | exact | recomputed | 180 | T5 |
+| KR-20, judge verdicts / gold verdicts | 0.5223 / 0.5231 | README | 0.00005 | recomputed | 0.5223 / 0.5231 | T5 |
+| Per-element judge error | 4.72 % | README | 0.005 pp | recomputed | 4.72 % | T5 |
+| Judge–gold correlation; leniency | 0.921; +0.46 elements | README | 0.0005; 0.005 | recomputed | 0.9206; +0.4611 | T5 |
+| Beta-binomial fit on judge totals | χ² 5.31, 6 df, p 0.504 | README | 0.005; exact; 0.0005 | recomputed (α 5.4521, β 3.6632) | χ² 5.3122, 6 df, p 0.5044 | T5 |
+| Simulated quantities (two-way grid, controls, G-study) | the archive's `sweeps.py` output | `tests/golden/judge_sweeps_reference.json` | 1e-9 | recomputed (seeds 11 / 101 / 303 / 7, draw order preserved) | identical (0.0) | T5 |
+| Published two-way KR-20 grid | `sweep_grid.json` | vendored | 0.5 SD per cell | statistically reproduced (different stream, README) | 0.315 SD worst cell | T5 |
+| Published 60-replicate run at 4.72 % error | `sweep_grid.json` | vendored | 0.5 SD per cell | statistically reproduced (seed unknown) | within tolerance | T5 |
+
 ## Seeds and random streams recovered from the archives
 
 One Capability (`frontier-ai-economic-validity`, `notebook/analysis.ipynb`, commit `946ce845`):
@@ -56,10 +69,11 @@ One Capability (`frontier-ai-economic-validity`, `notebook/analysis.ipynb`, comm
 | Model clustering (not in scope) | `KMeans(n_init=10, random_state=0)` | Task-1 cell "Clustering" |
 
 JUDGe (`llm-judge-reliability`, commit `126d1bce`): real-bank quantities reproduce bit-for-bit
-(README); simulated sweeps carry fixed seeds (`two_way_sweep` 11, `phi_control` 101,
-`ll_estimand_control` 303, `phrasing_gstudy` 7) but the published two-way grid came from a different
-RNG stream, so re-simulation moves cells by about a third of a per-cell standard deviation — the
-statistically-reproduced tier by construction. Details at T5.
+(README, confirmed at T5); simulated sweeps carry fixed seeds (`two_way_sweep` 11, `phi_control` 101,
+`ll_estimand_control` 303, `phrasing_gstudy` 7; `cluster_bootstrap` 0) and one stream per sweep in
+the archive's order, which `trust.sweeps()` reproduces exactly; the published two-way grid came from
+a different RNG stream, so re-simulation lands within a third of a per-cell standard deviation — the
+statistically-reproduced tier by construction (0.315 SD measured at T5).
 
 ## Expected runtime and cost
 

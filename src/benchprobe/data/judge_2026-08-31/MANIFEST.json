@@ -1,0 +1,28 @@
+{
+  "name": "judge_2026-08-31",
+  "description": "Item bank and published simulation grid behind 'Three Ways Classical Test Theory Misleads for LLM Judges' (Zhu, 2026): 210 items (180 with judge verdicts) scored element by element (K = 10) by gold annotation and by one LLM judge, with the published KR-20 sweep values.",
+  "table": "judge_item_bank.csv",
+  "files": {
+    "judge_item_bank.csv": {
+      "sha256": "c8fff5bd2eb9d6f3d136eaa9e18acdd750091961ca6688ebd1e2f392ff6d5f90",
+      "bytes": 375645,
+      "rows": 210,
+      "columns": 38
+    },
+    "sweep_grid.json": {
+      "sha256": "818830ffb448af8b035574e44441a7362185e2a466282a18e7f21630db39abcb",
+      "bytes": 1437
+    }
+  },
+  "source": {
+    "repository": "https://github.com/louisyzhu/llm-judge-reliability",
+    "commit": "126d1bce2b1e7392a9c861cd2fafa90669ce0f76",
+    "paths": [
+      "judge_item_bank.csv",
+      "sweep_grid.json"
+    ],
+    "licence": "CC BY 4.0 (per that repository's LICENSE-DATA)"
+  },
+  "vendored_on": "2026-09-07",
+  "vendored_under_ticket": "T5"
+}

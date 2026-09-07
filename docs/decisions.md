@@ -67,8 +67,16 @@ without a ticket that says so.
 - Deduplicated frame keeps the `base` key as its last column — coordinating session; the other grids' column order is the snapshot's.
 - Runtime figures in `docs/reproducibility.md` given as ranges measured under light load — coordinating session; the reviewer measured 123 s and 19 s where the first run measured 90 s and 10 s.
 
+## 2026-09-07 — T5 trust
+
+- JUDGe item bank and published grid vendored as snapshot `judge_2026-08-31` (CC BY 4.0, commit `126d1bce`), loaded through `io.load_snapshot` like the One Capability table; `Snapshot` gains `.folder` and `.file(name)` so a multi-file snapshot's extra files are reachable only through the manifest — coordinating session; one loader, one integrity rule.
+- Archive function names kept (`kr20`, `bb_gof`, `livingston_lewis`, `phi_lambda`, …), with `bb_gof` and `livingston_lewis` returning named tuples instead of bare tuples — coordinating session; names join to the archive, and tuple unpacking still works.
+- JUDGe golden rows added in `tests/golden/test_judge.py`: the six real-bank quantities the archive README states reproduce bit-for-bit (tolerance half a unit of the last printed digit), the archive's own `sweeps.py` output (tolerance 1e-9; `tests/golden/judge_sweeps_reference.json` is that script's output under the locked environment, 7 Sept 2026), and the published grid and measured-error run at 0.5 SD per cell — coordinating session; handoff §6 fixes only the One Capability rows, so these are the T5 acceptance test the handoff's T5 line ("document the statistically-reproduced tier and seeds") implies. Result: real-bank rows recomputed exactly (0.5223 / 0.5231 / 4.72 % / 0.9206 / +0.4611 / χ² 5.3122, df 6, p 0.5044); `sweeps()` reproduces the archive script to 0.0; the published grid to 0.315 SD (README: 0.31).
+- Krippendorff's α implemented from the coincidence-matrix definition (nominal, ordinal, interval, ratio) and Cohen's κ delegated to scikit-learn — coordinating session (new code, in scope by SPEC §1). Reference values: Krippendorff (2011)'s worked example (0.7434 / 0.8154 / 0.8491 / 0.7974, matching the published 0.743 and 0.849) and six random fixtures computed with the `krippendorff` package (`tests/trust/krippendorff_reference.json`, agreement 2e-16); κ against the classic 2 × 2 example (0.4).
+- `gstudy_two_way` factored out of the archive's `phrasing_gstudy` loop so the variance components are callable on real data — coordinating session; `phrasing_gstudy` calls it and still reproduces the archive to 0.0.
+- Trust unit tests carry the `smoke` marker (about a second) — coordinating session; rule 6.
+
 ## Open, assigned
 
 - Louis: confirm the recovered four-parameter logistic (T3) against the pre-registration text.
-- T5: Krippendorff's α and Cohen's κ are in SPEC §1 but not in the JUDGe archive; they are new code and need their own tests and reference values.
 - v0.1: licence choice; CITATION.cff; commit author identity.
