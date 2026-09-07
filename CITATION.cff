@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you use benchprobe, cite the study it ships with and this repository by version."
+title: "benchprobe: the analysis code behind One Capability or Many? and Three Ways Classical Test Theory Misleads for LLM Judges"
+type: software
+version: 0.1.0
+date-released: "YYYY-MM-DD"
+authors:
+  - family-names: Zhu
+    given-names: Louis Yiven
+    orcid: "https://orcid.org/0009-0001-5579-0340"
+license: MIT
+repository-code: "https://github.com/louisyzhu/benchprobe"
+abstract: >-
+  Analysis code extracted from the archives of two evaluation studies and packaged so the same
+  computation runs by one command: reliability and grader-agreement estimators (trust), factor
+  structure and incremental validity (measure), leave-one-benchmark-out prediction with bootstrap
+  uncertainty (predict), and the one-command reproduction of the twelve archived One Capability
+  result tables with per-table reproducibility tiers (report).
+references:
+  - type: article
+    title: "One Capability or Many? Testing the Economic Validity of Frontier AI Evaluation"
+    authors:
+      - family-names: Zhu
+        given-names: Louis Yiven
+    year: 2026
+    identifiers:
+      - type: other
+        value: "arXiv:2608.29420"
+  - type: article
+    title: "Three Ways Classical Test Theory Misleads for LLM Judges"
+    authors:
+      - family-names: Zhu
+        given-names: Louis Yiven
+    year: 2026

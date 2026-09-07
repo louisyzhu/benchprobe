@@ -84,9 +84,10 @@ performs no inference and needs no credentials.
 
 ## Licence
 
-To be set by the author at v0.1. Until then, all rights reserved; the vendored data keeps its own
-CC BY 4.0 terms.
+Code: MIT (`LICENSE`), as the two source archives' code. The vendored data keeps its own CC BY 4.0
+terms (see each snapshot folder's README).
 
 ## Citation
 
-Cite the study the code ships with, by version, once v0.1 exists. `CITATION.cff` is added at v0.1.
+Cite the study the code ships with and this repository by version: `CITATION.cff` (fill in the
+release date at tagging).

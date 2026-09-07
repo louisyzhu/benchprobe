@@ -5,6 +5,8 @@ description = "Analysis code behind benchmark-validity studies: trust, measure, 
 readme = "README.md"
 requires-python = ">=3.12"
 authors = [{ name = "Louis Yiven Zhu" }]
+license = "MIT"
+license-files = ["LICENSE"]
 # Lower bounds are the versions the One Capability archive ran on
 # (frontier-ai-economic-validity/requirements.txt, Python 3.13). The exact
 # environment is pinned by uv.lock; see docs/reproducibility.md.
