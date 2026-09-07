@@ -18,11 +18,11 @@ The One Capability acceptance rows (handoff §6) are encoded in `tests/golden/te
 (T1) with the tolerances below; each row carries the tier and the recomputed value from the ticket
 that computed it (T2 grids, T3 measure, T4 predict). "Archive file" is where the value was verified on
 6 September 2026 (`frontier-ai-economic-validity`, commit `946ce845`). Last full run:
-`uv run pytest -m golden` on `main` after T4, 20 passed in 685 s.
+`uv run pytest -m golden` on `main` after T4.1, 20 passed in 682 s (one warning, the KMO note below).
 
 | Output | Grid | Archive value | Archive file | Tolerance | Tier | Recomputed | Ticket |
 |---|---|---|---|---|---|---|---|
-| KMO | complete_case (96) | 0.933 | task1_structure_results.json (0.9326) | 0.005 | recomputed | 0.9326 | T3 |
+| KMO | complete_case (96) | 0.933 | task1_structure_results.json (0.9326) | 0.005 | recomputed (factor_analyzer warns that it used the Moore–Penrose inverse: the correlation matrix is near-singular on this grid, Terminal-Bench v2.1's uniqueness being ≈ 0; the archive's `calculate_kmo` does the same) | 0.9326 | T3 |
 | First-factor share of common variance | complete_case | 74.5 % | task1_structure_results.json (0.74544) | 0.5 pp | recomputed | 74.544 % | T3 |
 | Logistic-fit date-R² of the dominant factor | complete_case | 0.505 | hypothesis_adjudication.csv (OLS 0.477 in task1_structure_results.json) | 0.005 | recomputed (four-parameter logistic recovered at T3; other factors 0.3641 / 0.2859 vs archived 0.364 / 0.286; OLS 0.4767) | 0.5048 | T3 |
 | Residualised first-factor share | complete_case | 59.6 % | task1_structure_results.json (0.59635) | 0.5 pp | recomputed | 59.635 % | T3 |
