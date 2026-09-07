@@ -40,6 +40,29 @@ that computed it (T2 grids, T3 measure, T4 predict). "Archive file" is where the
 | Ladder, first factor alone (iii), best learner | same | RMSE 0.950 | lobo_rung_summary.csv | 0.005 | recomputed (elastic net; R² 0.1096 vs 0.110; the other two rungs the paper prints, i and v, give rf 0.7406 / R² 0.4587 and ridge 0.4382 / R² 0.8005 against 0.741 / 0.459 and 0.438 / 0.800) | RMSE 0.9503 | T4 |
 | Grid sizes | complete_case, deduplicated, compute_known, economic_dense | 96, 89, 58, 103 | task1_structure_results.json, dedup_r1_comparison.csv, subsample_date_compute.csv, archive README | exact | recomputed | 96, 89, 58, 103 (T2, `pytest -m golden -k grid_size`: 4 passed) | T2 |
 
+### One Capability, the twelve archived tables (T7)
+
+`python -m benchprobe.report one-capability --out DIR` writes all twelve with captions and a
+`comparison.csv`. The table below is the run of 7 September 2026; the fast path (no ladder refit)
+took 23 s, the `--full-ladder` run 33 minutes on two cores and reproduced `lobo_rung_summary.csv`
+byte for byte (both scopes, all five rungs, best learners and every value at the archive's three
+decimals).
+
+| Table | Tier | Deviation from archive | Tolerance |
+|---|---|---|---|
+| loadings_raw.csv | recomputed | 1.4e-6 | 5e-4 |
+| loadings_residualised.csv | recomputed | 1.6e-7 | 5e-4 |
+| task1_structure_results.json | recomputed (logit share and Kearns constants regenerated) | 1.5e-4 | 5e-4 |
+| cluster_validation.csv | regenerated (clustering outside SPEC §1) | — | — |
+| lobo_rung_summary.csv | regenerated on the fast path; recomputed with `--full-ladder` (four learners, twelve targets) | 0 (identical) | 1e-3 |
+| h4_bootstrap_dmse.csv | statistically reproduced (points exact at 3 dp) | 1.97 MC SD, worst endpoint | 3 MC SD |
+| task2_error_analysis_gdpval.csv | recomputed | 7.0e-7 | 5e-4 |
+| k_selection_evidence.csv | recomputed (BIC row regenerated) | 0 | exact on selected_k |
+| ksweep_rung_iv.csv | statistically reproduced (points within 2e-4) | 1.24 MC SD | 3 MC SD |
+| efa_factor_correlations.csv | recomputed | 0 | 5e-4 |
+| efa_uniquenesses.csv | recomputed | 0 | 5e-4 |
+| eda_distribution_stats.csv | recomputed | 4e-16 | 5e-4 |
+
 ### JUDGe (T5)
 
 | Output | Archive value | Archive file | Tolerance | Tier | Recomputed | Ticket |
@@ -110,10 +133,7 @@ both values (rule 3) and decided at T3.
    depended on values that exist only in those tables: the logistic-fit date-R² of 0.505 (the notebook
    derives the OLS 0.477 only) and the compute-known subsample (n = 58; the notebook does not build it).
    Both recomputed at T3: the four-parameter logistic reproduces 0.505 / 0.364 / 0.286, and
-   `complete_case ∩ non-null totalParameters` reproduces 66.32 / 49.84. Of the twelve tables, T3
-   recomputes `loadings_residualised.csv`, `efa_factor_correlations.csv`, `efa_uniquenesses.csv`,
-   `k_selection_evidence.csv`'s parallel-analysis row and the structural fields of
-   `task1_structure_results.json`; `cluster_validation.csv` is out of scope (clustering); the LOBO
-   tables (`lobo_rung_summary.csv`, `h4_bootstrap_dmse.csv`, `ksweep_rung_iv.csv`,
-   `task2_error_analysis_gdpval.csv`) fall to T4; `eda_distribution_stats.csv` to T7. The table-level
-   accounting closes at T7.
+   `complete_case ∩ non-null totalParameters` reproduces 66.32 / 49.84. Closed at T7 (table above):
+   ten of the twelve are recomputed or statistically reproduced; `cluster_validation.csv` is out of
+   scope; within the recomputed tables the logit first-factor share, the Kearns constants and the
+   BIC row are regenerated because their computations are not in the archive.

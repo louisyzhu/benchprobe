@@ -7,7 +7,7 @@ grids (SPEC.md §3) reproduce the row selections of the One Capability archive
 (``frontier-ai-economic-validity``, ``notebook/analysis.ipynb``), including its base-model
 deduplication, verbatim.
 
-Config-driven runs (SPEC.md §1) are deferred to T7, where the one-command reproduction needs them.
+Config-driven runs (SPEC.md §1) live in ``benchprobe.report`` (a JSON config, T7).
 """
 
 from __future__ import annotations

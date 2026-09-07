@@ -159,6 +159,8 @@ class LoboResult:
     oof: dict[tuple[str, str, str], tuple[np.ndarray, np.ndarray]]
     """``(target, rung, learner)`` → out-of-fold ``(y_true, y_pred)``, targets standardised on
     training-fold statistics, rows in outer-fold order."""
+    oof_index: dict[str, np.ndarray]
+    """``target`` → the grid row index of each out-of-fold row, in the same order as ``oof``."""
     grid: str
     n: int
     targets: tuple[str, ...]
@@ -204,6 +206,7 @@ def lobo(
     cov = _covariate_matrix(frame) if "v_kfac_cov" in rungs else np.zeros((len(frame), 0))
     outer = KFold(outer_folds, shuffle=True, random_state=seed)
     oof: dict[tuple[str, str, str], tuple[np.ndarray, np.ndarray]] = {}
+    oof_index: dict[str, np.ndarray] = {}
     records: list[dict[str, Any]] = []
     for target in targets:
         if target not in benchmarks:
@@ -217,6 +220,7 @@ def lobo(
             raise ValueError(
                 f"grid {grid.name!r} carries NaN release dates; rung i_date needs them"
             )
+        oof_index[target] = np.concatenate([te for _, te in outer.split(Z)])
         for rung in rungs:
             for name, (estimator, param_grid) in learner_map.items():
                 yt, yp, rt, rp = [], [], [], []
@@ -269,6 +273,7 @@ def lobo(
     return LoboResult(
         metrics=metrics,
         oof=oof,
+        oof_index=oof_index,
         grid=grid.name,
         n=int(len(frame)),
         targets=tuple(targets),

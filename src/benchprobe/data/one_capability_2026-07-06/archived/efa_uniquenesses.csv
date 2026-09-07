@@ -1,0 +1,13 @@
+benchmark,uniqueness,communality
+gpqa,0.0908,0.9092
+hle,0.5767,0.4233
+omniscience,0.4909,0.5091
+tau2,0.6417,0.3583
+ifbench,0.2478,0.7522
+lcr,0.4156,0.5844
+scicode,0.5237,0.4763
+critpt,0.0232,0.9768
+terminalbenchHard,0.3108,0.6892
+gdpval_elo,0.2715,0.7285
+terminalbenchV21,-0.0277,1.0277
+tauBanking,0.5583,0.4417

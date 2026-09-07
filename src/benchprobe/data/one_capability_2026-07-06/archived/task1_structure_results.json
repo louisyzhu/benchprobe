@@ -1,0 +1,29 @@
+{
+  "pca_pc1_share": 0.7937827805182774,
+  "pca_evr_top5": [
+    0.7937827805182774,
+    0.07600368023958606,
+    0.03513431667399598,
+    0.027520042970725887,
+    0.018217488781432135
+  ],
+  "parallel_analysis_k_raw": 1,
+  "parallel_analysis_k_residualised": 1,
+  "raw_factor1_communal_share": 0.7454397975024154,
+  "residualised_factor1_share_dateonly": 0.5963512157212804,
+  "drop_pp_dateonly": 14.908858178113505,
+  "subsample_raw_share": 0.6632002170676292,
+  "subsample_res_share": 0.5705239343403476,
+  "subsample_drop_pp": 9.267628272728157,
+  "mean_date_R2": 0.3544973869825558,
+  "dominant_factor_date_R2": 0.4767245111183763,
+  "kearns_calibration_raw": 0.72,
+  "kearns_calibration_corrected": 0.41,
+  "n_G1": 96,
+  "n_G2": 409,
+  "n_subsample": 58,
+  "kmo_G1": 0.932636117100187,
+  "mean_offdiag_spearman": 0.7905143987856661,
+  "rank_efa_factor1_share": 0.9450370074355149,
+  "logit_efa_factor1_share": 0.9180610752011268
+}
