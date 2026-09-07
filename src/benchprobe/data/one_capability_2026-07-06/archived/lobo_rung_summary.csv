@@ -1,0 +1,11 @@
+scope,rung,best_learner,train_rmse,test_rmse,test_r2
+all12,i_date,rf,0.564,0.8,0.367
+all12,ii_meanidx,rf,0.312,0.445,0.794
+all12,iii_f1,elasticnet,0.941,0.96,0.095
+all12,iv_kfac,ridge,0.42,0.448,0.794
+all12,v_kfac_cov,ridge,0.386,0.428,0.81
+economic,i_date,rf,0.521,0.741,0.459
+economic,ii_meanidx,ridge,0.463,0.474,0.771
+economic,iii_f1,elasticnet,0.933,0.95,0.11
+economic,iv_kfac,ridge,0.41,0.433,0.808
+economic,v_kfac_cov,ridge,0.391,0.438,0.8

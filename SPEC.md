@@ -74,7 +74,7 @@ an amendment changes the test's call, never its number.
   min_models=60)` and `model_coverage(table, benchmarks, *, min_benchmarks=8)` (the archive's Phase 1
   inclusion rules), `sha256_of(path)`. Constants: `PRIMARY_BENCHMARKS`, `DENSE9_BENCHMARKS`,
   `ECONOMIC_BENCHMARKS`, `LABELS`, `BLOCKS`, `GRIDS`, `ENV_DATA_DIR`.
-- Config-driven runs (§1) are deferred to T7.
+- Config-driven runs (§1): `report.load_config` / `report.default_config` (T7).
 
 **`benchprobe.measure`** (T3 — confirmed 6 September 2026, as implemented)
 
@@ -198,7 +198,37 @@ names kept. Verdict matrices are `(n_items, K)` 0/1 arrays; totals are `(n_items
   v_resid, n=210, R=3, sims=200, seed=7)`, `sweeps()` (the archive's main block, in its order).
   Constants `K_DEFAULT`, `N_ITEMS`, `MEASURED_ERROR`, `BANK_SPREADS`, `JUDGE_ERRORS`.
 
-**`benchprobe.irt`**, **`benchprobe.report`** — signatures are agreed at T6 and T7.
+**`benchprobe.report`** (T7 — agreed and implemented 7 September 2026)
+
+- `reproduce_one_capability(out_dir, *, full_ladder=False, k=3, seed=0, bootstrap_B=2000, bootstrap_seed=42, parallel_analysis_iter=1000, parallel_analysis_seed=42, snapshot=None, quick=False) -> RunRecord`
+  Writes the twelve archived One Capability tables (`ONE_CAPABILITY_TABLES`, the archive README's
+  list) to `out_dir`, each with a caption stating its tier, plus `captions.md`, `comparison.csv`
+  (table, tier, deviation, tolerance, within) and `provenance.json` (snapshot provenance, config,
+  timestamps, per-table records). Tiers per table: recomputed — `loadings_raw`,
+  `loadings_residualised`, `task1_structure_results` (three fields regenerated: the logit share,
+  whose transform is not in the archive, and the two Kearns literature constants),
+  `task2_error_analysis_gdpval`, `k_selection_evidence` (BIC row regenerated),
+  `efa_factor_correlations`, `efa_uniquenesses`, `eda_distribution_stats`, and with
+  `full_ladder` `lobo_rung_summary` (four learners, twelve targets, both scopes); statistically
+  reproduced — `h4_bootstrap_dmse`, `ksweep_rung_iv` (points recomputed; interval endpoints judged
+  in Monte-Carlo standard deviations over 20 re-runs of the bootstrap under other seeds, tolerance
+  3 after the archive's rounding); regenerated — `cluster_validation` (clustering is outside §1)
+  and, on the fast path, `lobo_rung_summary`. Tolerance for recomputed tables 5e-4 after rounding
+  to the archive's precision. `quick` shrinks the bootstraps for tests and is recorded.
+- `caption(name, tier, *, study, snapshot, deviation=None, tolerance=None, notes=None) -> str` —
+  the rule-8 boundary statement; `compare(new, archived, *, keys, numeric=None, exclude=None) ->
+  (max_abs_deviation, per_cell)`; `interval_agreement(archived, ours, reruns, *, rounding) ->
+  (max_z, z)`; `default_config()`, `load_config(path)` (JSON; unknown keys raise); `main(argv)`
+  — `python -m benchprobe.report one-capability --out DIR [--full-ladder] [--config FILE]
+  [--quick]`, exit 1 if any table is outside tolerance (reported, never adjusted).
+- `TableResult(name, tier, path, caption, max_abs_deviation, tolerance, within_tolerance, notes)`;
+  `RunRecord(study, out_dir, tables, provenance, config, started_at, finished_at)` with
+  `.summary()`.
+- `predict.LoboResult` gains `.oof_index` (T7): the grid row of each out-of-fold row, so tables
+  keyed by model name can be rebuilt from the out-of-fold predictions.
+
+**`benchprobe.irt`** — signatures are agreed at T6, which needs the Price of Intelligence archive
+(Zenodo 10.5281/zenodo.22177190; not reachable from the T7 environment).
 
 ## 3. Names used by the archive and kept here
 

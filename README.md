@@ -31,6 +31,17 @@ uv run ruff check .                      # lint
 uv sync --extra irt                      # add PyTorch, for benchprobe.irt
 ```
 
+One command reproduces the twelve result tables of *One Capability or Many?* that the archive
+notebook reads rather than derives, each with a caption stating whether it is recomputed,
+statistically reproduced or regenerated, and its deviation from the archived copy:
+
+```sh
+uv run python -m benchprobe.report one-capability --out runs/one_capability   # about 25 s
+uv run python -m benchprobe.report one-capability --out runs/one_capability --full-ladder  # + ~40 min
+```
+
+`--config file.json` overrides the defaults in `report.default_config()` (seeds, bootstrap size, k).
+
 ## Configuration
 
 Everything is configured by environment variable; nothing in the repository refers to a local path.
@@ -52,8 +63,9 @@ Everything is configured by environment variable; nothing in the repository refe
   test is a finding and is reported as such. As of T5 all twenty-eight pass (`docs/reproducibility.md`
   states each row's tier and recomputed value); the three `slow` rows refit four learners and take
   about ten minutes.
-- `tests/io/`, `tests/measure/`, `tests/predict/`, `tests/trust/` — unit tests on synthetic data and
-  the vendored snapshots, in the smoke set.
+- `tests/io/`, `tests/measure/`, `tests/predict/`, `tests/trust/`, `tests/report/` — unit tests on
+  synthetic data and the vendored snapshots, in the smoke set. `tests/golden/test_one_capability_tables.py`
+  runs the twelve-table reproduction and requires every table within its tolerance.
 
 `docs/reproducibility.md` states, for every output, whether it is *recomputed*, *statistically
 reproduced* or *regenerated*, with tolerances, seeds, expected runtime and cost. `docs/decisions.md`

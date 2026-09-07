@@ -8,6 +8,54 @@
       "bytes": 137047,
       "rows": 421,
       "columns": 34
+    },
+    "archived/loadings_raw.csv": {
+      "sha256": "a202c72b037844d5519c1d039c661c1f6f3fb56b73bacc3b1d199356a709684d",
+      "bytes": 1015
+    },
+    "archived/loadings_residualised.csv": {
+      "sha256": "419d7484cc38fecdd78bf0950c9039ed8204252d5ec9c856ef62bbd6be7d2d1e",
+      "bytes": 1022
+    },
+    "archived/task1_structure_results.json": {
+      "sha256": "6012e1640af3eaf2419a73dfd2929d47c18530407d999ebe8d2d138b5b6646b8",
+      "bytes": 937
+    },
+    "archived/cluster_validation.csv": {
+      "sha256": "e4048ffb9c0a913493802d6630afc65753167bdea97216516c2396dcd24192af",
+      "bytes": 157
+    },
+    "archived/lobo_rung_summary.csv": {
+      "sha256": "fd6f99cc76bec597cb4b3ed22d3bdee1d90e2634772609d1345e974413a413ce",
+      "bytes": 447
+    },
+    "archived/h4_bootstrap_dmse.csv": {
+      "sha256": "e9131fec7413cdf7e7adff0e9efb5dddf434274956b3c732d936fc24099690b8",
+      "bytes": 654
+    },
+    "archived/task2_error_analysis_gdpval.csv": {
+      "sha256": "0498e6190a4c32518166d512c5069963d96ec49bd66489b856bd35b1bc211b95",
+      "bytes": 7863
+    },
+    "archived/k_selection_evidence.csv": {
+      "sha256": "fab4a5e39d37500d19ad578a6df6c81bfcf5cf632295fae6cca35df6dfaa43d9",
+      "bytes": 219
+    },
+    "archived/ksweep_rung_iv.csv": {
+      "sha256": "aab5cc70214a52367dac030b50b912935b93dc691c0d05ed63194aac89ce6cfd",
+      "bytes": 303
+    },
+    "archived/efa_factor_correlations.csv": {
+      "sha256": "17ec6ae2f354e7efa33c238540e26447c3b66f8741d37df484fd43294f689c2b",
+      "bytes": 73
+    },
+    "archived/efa_uniquenesses.csv": {
+      "sha256": "f74ce3b98f054755900c8f5e6a84b7ee04e44aef677183061657caf593b1a6b7",
+      "bytes": 312
+    },
+    "archived/eda_distribution_stats.csv": {
+      "sha256": "f4eca5f900ac5ad9d8118d14097730b5cb9683eb41f62e5bcdd7f461f2983fed",
+      "bytes": 1408
     }
   },
   "source": {
@@ -39,5 +87,23 @@
     }
   ],
   "vendored_on": "2026-09-06",
-  "vendored_under_ticket": "T0"
+  "vendored_under_ticket": "T0",
+  "archived_tables": {
+    "description": "The twelve result tables the archive notebook reads rather than derives (archive README, 'Tables that ship without notebook derivation'), copied unchanged from data/processed/ at the source commit; benchprobe.report recomputes what it can and regenerates the rest, stating which in every caption.",
+    "files": [
+      "archived/loadings_raw.csv",
+      "archived/loadings_residualised.csv",
+      "archived/task1_structure_results.json",
+      "archived/cluster_validation.csv",
+      "archived/lobo_rung_summary.csv",
+      "archived/h4_bootstrap_dmse.csv",
+      "archived/task2_error_analysis_gdpval.csv",
+      "archived/k_selection_evidence.csv",
+      "archived/ksweep_rung_iv.csv",
+      "archived/efa_factor_correlations.csv",
+      "archived/efa_uniquenesses.csv",
+      "archived/eda_distribution_stats.csv"
+    ],
+    "vendored_under_ticket": "T7"
+  }
 }

@@ -1,0 +1,5 @@
+criterion,selected_k,detail
+parallel_analysis,1,only obs eig1 (9.53) > rand95 (1.79); eig2 (0.91)<1.57
+kaiser_eig_gt_1,1,1 eigenvalue >1
+scree_elbow,1,sharp elbow after PC1 (9.53 -> 0.91)
+BIC_min,4,BIC minimised at k=4

@@ -1,0 +1,6 @@
+k,kmeans_silhouette,gmm_silhouette,agglomerative_silhouette
+2,0.48,0.467,0.499
+3,0.455,0.429,0.428
+4,0.438,0.389,0.413
+5,0.436,0.315,0.391
+6,0.435,0.29,0.38

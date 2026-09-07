@@ -1,0 +1,12 @@
+scope,baseline,kmodel,dMSE,ci_lo,ci_hi,excludes_zero
+economic_pooled,i_date,iv_kfac,0.373,0.28,0.472,True
+economic_pooled,ii_meanidx,iv_kfac,0.037,0.019,0.055,True
+economic_pooled,iii_f1,iv_kfac,0.714,0.599,0.839,True
+GDPval (Elo),ii_meanidx,iv_kfac,0.026,0.01,0.044,True
+GDPval (Elo),i_date,iv_kfac,0.397,0.238,0.593,True
+Terminal-Bench v2.1,ii_meanidx,iv_kfac,0.028,0.001,0.056,True
+Terminal-Bench v2.1,i_date,iv_kfac,0.439,0.286,0.596,True
+τ³-Banking,ii_meanidx,iv_kfac,0.056,0.008,0.103,True
+τ³-Banking,i_date,iv_kfac,0.51,0.331,0.708,True
+τ²-Bench,ii_meanidx,iv_kfac,0.038,-0.011,0.086,False
+τ²-Bench,i_date,iv_kfac,0.147,-0.065,0.344,False
