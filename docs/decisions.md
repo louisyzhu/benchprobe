@@ -39,10 +39,19 @@ without a ticket that says so.
 - `io` unit tests carry the `smoke` marker — coordinating session; they run in well under a second and rule 6 wants every module's smoke test in CI.
 - Config-driven runs deferred to T7 — coordinating session; nothing before the one-command reproduction needs a config file, and rule 4 forbids speculative scope.
 
+## 2026-09-06 — T3 measure
+
+- The logistic form behind the paper's date-R² (0.505) recovered as the four-parameter logistic `floor + upper/(1 + exp(−rate(t − midpoint)))`, least squares, best of a 4 × 3 grid of starts — coordinating session; it was not in the archived notebook (OLS 0.477 was). Evidence: it reproduces all three archived per-factor values at once (0.5048 / 0.3641 / 0.2859 against 0.505 / 0.364 / 0.286, `PHASE2_REPORT.md`), which a form tuned to one number would not; the three-parameter logistic (no floor) gives 0.235 and is ruled out. Louis to confirm against the pre-registration text; the code is what reproduces the paper either way.
+- `compute_known` confirmed as `complete_case ∩ non-null totalParameters`: raw share 66.32 → date-only 49.84, drop 16.48 pp, the archived `subsample_date_compute.csv` values to the second decimal — coordinating session; open item 2's second half closes.
+- `first_factor_share` takes column 0 of the unrotated ML solution, as the archive's `factor1_share` does, without re-ordering by size — coordinating session; on every grid tested column 0 is also the largest, and the archive's number is what the test locks.
+- Sign alignment applied to loadings, structure, weights and `phi` together with the scores — coordinating session; the archive flips scores (Task-1 date cell) and loadings (residualised-loadings cell) by the same score-based sign, and a consistent solution needs `phi` flipped too. All signs were +1 on the archive's grids, so no reported number moves.
+- The factor_analyzer/scikit-learn shim is applied inside `measure` at first use, never at import — coordinating session; verified needed under the locked scikit-learn 1.9.0 (`transform` passes `force_all_finite`), and a shim at import time would patch scikit-learn for every user of the process.
+- Environment drift (numpy 2.5.3, pandas 3.0.5, scipy 1.18.1, statsmodels 0.15.0 vs the archive's) moved no measure-layer number beyond the fourth decimal; the archive's exact versions are not pinned — coordinating session; `docs/reproducibility.md` records both values per row.
+- Measure unit tests carry the `smoke` marker (synthetic data, under two seconds) — coordinating session; rule 6.
+
 ## Open, assigned
 
-- T3: whether the sklearn `check_array` shim the archive applies to factor_analyzer 0.5.1 is still needed under the locked versions; whether to pin the archive's exact numeric-stack versions.
-- T3: the logistic functional form behind the paper's date-R² of 0.505 (not in the archived notebook; OLS 0.477 is). Recover from the pre-registration or Phase 2 working code before implementing `date_r2(form="logistic")`.
+- Louis: confirm the recovered four-parameter logistic (T3) against the pre-registration text.
 - T4: the archive draws the three baseline bootstraps (`i_date`, `ii_meanidx`, `iii_f1`) from one `default_rng(42)` stream in that order; exact reproduction of [+0.019, +0.055] needs the same order, otherwise the row is statistically reproduced.
 - T5: Krippendorff's α and Cohen's κ are in SPEC §1 but not in the JUDGe archive; they are new code and need their own tests and reference values.
 - v0.1: licence choice; CITATION.cff; commit author identity.

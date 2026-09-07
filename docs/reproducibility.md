@@ -21,16 +21,16 @@ recomputed value from the ticket that computes it. "Archive file" is where the v
 
 | Output | Grid | Archive value | Archive file | Tolerance | Tier | Recomputed | Ticket |
 |---|---|---|---|---|---|---|---|
-| KMO | complete_case (96) | 0.933 | task1_structure_results.json (0.9326) | 0.005 | not yet computed | — | T3 |
-| First-factor share of common variance | complete_case | 74.5 % | task1_structure_results.json (0.74544) | 0.5 pp | not yet computed | — | T3 |
-| Logistic-fit date-R² of the dominant factor | complete_case | 0.505 | hypothesis_adjudication.csv (OLS 0.477 in task1_structure_results.json) | 0.005 | not yet computed; functional form to recover (open item 2) | — | T3 |
-| Residualised first-factor share | complete_case | 59.6 % | task1_structure_results.json (0.59635) | 0.5 pp | not yet computed | — | T3 |
-| Residualisation drop | complete_case | 14.9 pp | task1_structure_results.json (14.909) | 1.0 pp | not yet computed | — | T3 |
-| Residualisation drop, bootstrap 95 % interval | complete_case | [−5.3, +32.7] pp | bootstrap_h2_drop.csv (−5.337, 32.731) | 2.0 pp per endpoint | not yet computed; statistically reproduced unless draw order matches | — | T3 |
-| Residualisation drop | deduplicated (89) | 24.1 pp | dedup_r1_comparison.csv | 1.0 pp | not yet computed | — | T3 |
-| Residualisation drop, date only | compute_known (58) | 16.5 pp | subsample_date_compute.csv (16.48) | 1.0 pp | not yet computed; subsample not derived in the archived notebook (open item 2) | — | T3 |
-| Residualised oblimin loadings, economic benchmarks on the economic factor | complete_case | 1.01 / 0.84 / 0.54 / 0.50 | loadings_residualised.csv; paper Table tab:loadings | 0.02 | not yet computed | — | T3 |
-| Largest economic cross-loading | complete_case | 0.38 | loadings_residualised.csv (0.3826) | 0.02 | not yet computed | — | T3 |
+| KMO | complete_case (96) | 0.933 | task1_structure_results.json (0.9326) | 0.005 | recomputed | 0.9326 | T3 |
+| First-factor share of common variance | complete_case | 74.5 % | task1_structure_results.json (0.74544) | 0.5 pp | recomputed | 74.544 % | T3 |
+| Logistic-fit date-R² of the dominant factor | complete_case | 0.505 | hypothesis_adjudication.csv (OLS 0.477 in task1_structure_results.json) | 0.005 | recomputed (four-parameter logistic recovered at T3; other factors 0.3641 / 0.2859 vs archived 0.364 / 0.286; OLS 0.4767) | 0.5048 | T3 |
+| Residualised first-factor share | complete_case | 59.6 % | task1_structure_results.json (0.59635) | 0.5 pp | recomputed | 59.635 % | T3 |
+| Residualisation drop | complete_case | 14.9 pp | task1_structure_results.json (14.909) | 1.0 pp | recomputed | 14.909 pp | T3 |
+| Residualisation drop, bootstrap 95 % interval | complete_case | [−5.3, +32.7] pp | bootstrap_h2_drop.csv (−5.337, 32.731) | 2.0 pp per endpoint | recomputed (seed 42 and draw order replicated; P(drop ≥ 15 pp) = 0.346 as archived) | [−5.336, 32.731] pp | T3 |
+| Residualisation drop | deduplicated (89) | 24.1 pp | dedup_r1_comparison.csv | 1.0 pp | recomputed (90.23 → 66.13) | 24.102 pp | T3 |
+| Residualisation drop, date only | compute_known (58) | 16.5 pp | subsample_date_compute.csv (16.48) | 1.0 pp | recomputed (66.32 → 49.84; subsample definition confirmed, open item 2) | 16.479 pp | T3 |
+| Residualised oblimin loadings, economic benchmarks on the economic factor | complete_case | 1.01 / 0.84 / 0.54 / 0.50 | loadings_residualised.csv; paper Table tab:loadings | 0.02 | recomputed (economic factor = F1; φ 0.3643 / 0.6718 / 0.7205 and uniquenesses also match the archive) | 1.0063 / 0.8418 / 0.5420 / 0.4991 | T3 |
+| Largest economic cross-loading | complete_case | 0.38 | loadings_residualised.csv (0.3826) | 0.02 | recomputed | 0.3826 | T3 |
 | Pooled economic ΔMSE, mean index vs k-factor, ridge | complete_case | +0.037 | h4_bootstrap_dmse.csv; task2_prediction_results.json (0.037342) | 0.002 | not yet computed | — | T4 |
 | Its bootstrap 95 % interval | complete_case | [+0.019, +0.055] | h4_bootstrap_dmse.csv | 0.005 per endpoint | not yet computed; statistically reproduced unless draw order matches | — | T4 |
 | Pooled economic ΔMSE | deduplicated (89) | +0.038 | h4_bootstrap_dedup.csv (0.0378) | 0.002 | not yet computed | — | T4 |
@@ -88,6 +88,13 @@ both values (rule 3) and decided at T3.
    The README wording is a finding for the coordinating thread.
 2. **Which of the twelve archived tables can be recomputed at all from the archived inputs?** The
    archive README lists twelve tables the notebook reads rather than derives. Two acceptance rows
-   depend on values that exist only in those tables: the logistic-fit date-R² of 0.505 (the notebook
+   depended on values that exist only in those tables: the logistic-fit date-R² of 0.505 (the notebook
    derives the OLS 0.477 only) and the compute-known subsample (n = 58; the notebook does not build it).
-   T3 reports which rows are recomputable, which are regenerated, and why.
+   Both recomputed at T3: the four-parameter logistic reproduces 0.505 / 0.364 / 0.286, and
+   `complete_case ∩ non-null totalParameters` reproduces 66.32 / 49.84. Of the twelve tables, T3
+   recomputes `loadings_residualised.csv`, `efa_factor_correlations.csv`, `efa_uniquenesses.csv`,
+   `k_selection_evidence.csv`'s parallel-analysis row and the structural fields of
+   `task1_structure_results.json`; `cluster_validation.csv` is out of scope (clustering); the LOBO
+   tables (`lobo_rung_summary.csv`, `h4_bootstrap_dmse.csv`, `ksweep_rung_iv.csv`,
+   `task2_error_analysis_gdpval.csv`) fall to T4; `eda_distribution_stats.csv` to T7. The table-level
+   accounting closes at T7.

@@ -72,7 +72,7 @@ an amendment changes the test's call, never its number.
   `ECONOMIC_BENCHMARKS`, `LABELS`, `BLOCKS`, `GRIDS`, `ENV_DATA_DIR`.
 - Config-driven runs (§1) are deferred to T7.
 
-**`benchprobe.measure`** (T3)
+**`benchprobe.measure`** (T3 — confirmed 6 September 2026, as implemented)
 
 - `kmo(z) -> float` — overall Kaiser–Meyer–Olkin measure of the indicator matrix.
 - `parallel_analysis(z, *, n_iter: int = 1000, seed: int = 42, percentile: float = 95) -> ParallelAnalysis`
@@ -80,14 +80,16 @@ an amendment changes the test's call, never its number.
   shape; `.observed`, `.threshold` (per-eigenvalue percentile of the random draws) and `.k_retained`.
 - `efa(z, *, k: int = 3, rotation: str | None = "oblimin", method: str = "ml", align_to_mean_score: bool = True) -> Efa`
   Maximum-likelihood exploratory factor analysis. `.loadings` (DataFrame of pattern loadings,
-  benchmarks × `F1..Fk`), `.phi` (factor correlations; identity when unrotated), `.uniquenesses`,
-  `.ssl` (sum of squared loadings per factor), `.weights` (Thurstone regression weights on the pattern
-  loadings, `W = R⁻¹Λ` by pseudo-inverse) and `.scores` (regression factor scores `z @ R⁻¹S` with
-  `S = ΛΦ` the structure matrix, which is what `factor_analyzer.transform` computes and what the
-  archive's Task-1 date-R² uses; `S = Λ` when unrotated). The two weightings coincide when unrotated
-  and differ under oblimin; the archive's LOBO path projects held-out rows with `W = R⁻¹Λ`, and each
-  ticket keeps its archive's choice. With `align_to_mean_score`, each factor's sign is chosen so that
-  its scores correlate positively with the row-mean of `z`, as the archive does.
+  benchmarks × `F1..Fk`), `.structure` (`ΛΦ`), `.phi` (factor correlations; identity when
+  unrotated), `.uniquenesses`, `.ssl` (sum of squared pattern loadings per factor), `.weights`
+  (Thurstone regression weights on the pattern loadings, `W = R⁻¹Λ` by pseudo-inverse), `.scores`
+  (regression factor scores `z @ R⁻¹S`, which is what `factor_analyzer.transform` computes and what
+  the archive's Task-1 date-R² uses; `S = Λ` when unrotated), `.signs`, `.k`, `.rotation`, `.method`.
+  The two weightings coincide when unrotated and differ under oblimin; the archive's LOBO path
+  projects held-out rows with `W = R⁻¹Λ`, and each ticket keeps its archive's choice. With
+  `align_to_mean_score`, each factor's sign is chosen so that its scores correlate positively with
+  the row-mean of `z`, as the archive does; the sign is applied to scores, loadings, structure,
+  weights and `phi` together. NaN anywhere in the input raises.
 - `thurstone_weights(R, loadings) -> ndarray` — `W = R⁻¹Λ` by pseudo-inverse; used by `efa` and by
   `predict.lobo` to project held-out rows.
 - `first_factor_share(z, *, k: int = 3) -> float`
@@ -98,14 +100,18 @@ an amendment changes the test's call, never its number.
   the indicators and re-estimates the factor solution; handoff §2 says "date-residualisation of a
   factor", and this signature follows the archived computation (see `docs/decisions.md`).
 - `residualisation_drop_bootstrap(z, days, *, k: int = 3, B: int = 2000, seed: int = 42) -> DropBootstrap`
-  Resamples rows with replacement `B` times; on each draw recomputes `first_factor_share` before and
-  after `residualise_on_date` and records the drop (as a fraction). `.point` (the full-sample drop),
-  `.ci` (2.5th and 97.5th percentiles of the draws), `.draws`. The archive's H2(ii) check.
+  Resamples rows with replacement `B` times (`default_rng(seed)`, `rng.integers(0, n, n)` per
+  replicate, the archive's draw order); on each draw recomputes `first_factor_share` before and after
+  `residualise_on_date` and records the drop (as a fraction). `.point` (the full-sample drop), `.ci`
+  (2.5th and 97.5th percentiles of the draws), `.draws`, `.B`, `.seed`, `.k`. The archive's H2(ii)
+  check; reproduces its interval exactly.
 - `date_r2(x, days, *, form: str = "ols") -> float`
-  R² of a one-dimensional score vector on `days`. `form="ols"` is the archived computation;
-  `form="logistic"` is the pre-registered functional form behind the paper's 0.505, whose exact
-  specification is not in the archived notebook and must be recovered before T3 can implement it
-  (`docs/reproducibility.md`, open item 2).
+  R² (`1 − SS_res/SS_tot`) of a one-dimensional score vector on `days`. `form="ols"` is a straight
+  line (the archived Task-1 computation, 0.477). `form="logistic"` is the four-parameter logistic
+  `floor + upper / (1 + exp(−rate (t − midpoint)))` fitted by least squares (`scipy.optimize.curve_fit`)
+  from a 4 × 3 grid of starting values on standardised time, best fit kept; recovered at T3 as the
+  pre-registered form because it reproduces all three archived factor values, 0.505 / 0.364 / 0.286
+  (`docs/decisions.md`, T3).
 
 **`benchprobe.predict`** (T4)
 
