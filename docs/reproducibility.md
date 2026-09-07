@@ -44,9 +44,9 @@ that computed it (T2 grids, T3 measure, T4 predict). "Archive file" is where the
 
 `python -m benchprobe.report one-capability --out DIR` writes all twelve with captions and a
 `comparison.csv`. The table below is the run of 7 September 2026; the fast path (no ladder refit)
-took 23 s, the `--full-ladder` run 33 minutes on two cores and reproduced `lobo_rung_summary.csv`
-byte for byte (both scopes, all five rungs, best learners and every value at the archive's three
-decimals).
+takes 25–50 s on two cores depending on load, the `--full-ladder` run took 33 minutes and
+reproduced `lobo_rung_summary.csv` byte for byte (both scopes, all five rungs, best learners and
+every value at the archive's three decimals).
 
 | Table | Tier | Deviation from archive | Tolerance |
 |---|---|---|---|
@@ -55,10 +55,10 @@ decimals).
 | task1_structure_results.json | recomputed (logit share and Kearns constants regenerated) | 1.5e-4 | 5e-4 |
 | cluster_validation.csv | regenerated (clustering outside SPEC §1) | — | — |
 | lobo_rung_summary.csv | regenerated on the fast path; recomputed with `--full-ladder` (four learners, twelve targets) | 0 (identical) | 1e-3 |
-| h4_bootstrap_dmse.csv | statistically reproduced (points exact at 3 dp) | 1.97 MC SD, worst endpoint | 3 MC SD |
+| h4_bootstrap_dmse.csv | statistically reproduced (points exact at 3 dp; excludes_zero agrees on every row) | 1.97 MC SD, worst endpoint | 3 MC SD |
 | task2_error_analysis_gdpval.csv | recomputed | 7.0e-7 | 5e-4 |
 | k_selection_evidence.csv | recomputed (BIC row regenerated) | 0 | exact on selected_k |
-| ksweep_rung_iv.csv | statistically reproduced (points within 2e-4) | 1.24 MC SD | 3 MC SD |
+| ksweep_rung_iv.csv | statistically reproduced (points within 2e-4; excludes_zero agrees on every row) | 1.34 MC SD (compared before rounding, T7.1) | 3 MC SD |
 | efa_factor_correlations.csv | recomputed | 0 | 5e-4 |
 | efa_uniquenesses.csv | recomputed | 0 | 5e-4 |
 | eda_distribution_stats.csv | recomputed | 4e-16 | 5e-4 |

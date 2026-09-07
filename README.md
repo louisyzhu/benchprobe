@@ -36,8 +36,8 @@ notebook reads rather than derives, each with a caption stating whether it is re
 statistically reproduced or regenerated, and its deviation from the archived copy:
 
 ```sh
-uv run python -m benchprobe.report one-capability --out runs/one_capability   # about 25 s
-uv run python -m benchprobe.report one-capability --out runs/one_capability --full-ladder  # + ~40 min
+uv run python -m benchprobe.report one-capability --out runs/one_capability   # 25–50 s
+uv run python -m benchprobe.report one-capability --out runs/one_capability --full-ladder  # + ~35 min
 ```
 
 `--config file.json` overrides the defaults in `report.default_config()` (seeds, bootstrap size, k).
@@ -60,7 +60,7 @@ Everything is configured by environment variable; nothing in the repository refe
   (KMO 0.933, first-factor share 74.5 %, pooled LOBO ΔMSE +0.037, and the rest); `test_judge.py` the
   JUDGe real-bank quantities and simulations. These tests are the
   ship condition: they were written before the code and are never edited to pass. A failing golden
-  test is a finding and is reported as such. As of T5 all twenty-eight pass (`docs/reproducibility.md`
+  test is a finding and is reported as such. As of T7 all thirty pass (`docs/reproducibility.md`
   states each row's tier and recomputed value); the three `slow` rows refit four learners and take
   about ten minutes.
 - `tests/io/`, `tests/measure/`, `tests/predict/`, `tests/trust/`, `tests/report/` — unit tests on
