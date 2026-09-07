@@ -118,7 +118,7 @@ class SnapshotIntegrityError(ValueError):
     """A vendored or user-supplied snapshot does not match its manifest."""
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class Snapshot:
     """A loaded, hash-verified snapshot table with its manifest."""
 
@@ -150,7 +150,7 @@ class Snapshot:
         }
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class Grid:
     """A named analysis grid: rows, indicator matrix, and the release-date covariate."""
 
@@ -288,9 +288,16 @@ def model_coverage(
 
 
 def zscore(frame: pd.DataFrame, columns: list[str] | tuple[str, ...], *, ddof: int = 0):
-    """Column-wise standardisation over the rows of ``frame`` (population SD by default)."""
+    """Column-wise standardisation over the rows of ``frame`` (population SD by default).
+
+    A column with zero variance cannot be standardised and raises, rather than becoming NaN.
+    """
     x = frame[list(columns)].astype(float)
-    return (x - x.mean()) / x.std(ddof=ddof)
+    sd = x.std(ddof=ddof)
+    constant = [str(c) for c in sd.index[(sd == 0) | sd.isna()]]
+    if constant:
+        raise ValueError(f"zero-variance column(s) cannot be standardised: {', '.join(constant)}")
+    return (x - x.mean()) / sd
 
 
 def days_since_earliest_release(
@@ -341,7 +348,8 @@ def deduplicate_by_base_model(table: pd.DataFrame) -> pd.DataFrame:
     d["base"] = d["name"].apply(base_model_key)
     d["_ii"] = d["intelligenceIndex"].fillna(-np.inf)
     out = d.sort_values("_ii", ascending=False).groupby("base", as_index=False).first()
-    return out.drop(columns=["_ii"])
+    out = out.drop(columns=["_ii"])
+    return out[[c for c in out.columns if c != "base"] + ["base"]]  # ``base`` last, as an extra
 
 
 def _select_rows(table: pd.DataFrame, grid: str) -> tuple[pd.DataFrame, tuple[str, ...]]:

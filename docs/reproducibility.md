@@ -14,10 +14,11 @@ ledger: one row per output, kept current by the ticket that produces it.
 
 ## Outputs
 
-None computed yet. The One Capability acceptance rows (handoff §6) are encoded in
-`tests/golden/test_one_capability.py` (T1) with the tolerances below; each row gets its tier and its
-recomputed value from the ticket that computes it. "Archive file" is where the value was verified on
-6 September 2026 (`frontier-ai-economic-validity`, commit `946ce845`).
+The One Capability acceptance rows (handoff §6) are encoded in `tests/golden/test_one_capability.py`
+(T1) with the tolerances below; each row carries the tier and the recomputed value from the ticket
+that computed it (T2 grids, T3 measure, T4 predict). "Archive file" is where the value was verified on
+6 September 2026 (`frontier-ai-economic-validity`, commit `946ce845`). Last full run:
+`uv run pytest -m golden` on `main` after T4, 20 passed in 685 s.
 
 | Output | Grid | Archive value | Archive file | Tolerance | Tier | Recomputed | Ticket |
 |---|---|---|---|---|---|---|---|
@@ -65,10 +66,10 @@ statistically-reproduced tier by construction. Details at T5.
 From the One Capability archive README, laptop-class 12-core machine: the whole notebook about
 26 minutes end to end with all four learners, nearly all of it in the LOBO ladder and the
 hyperparameter-table sweep; about 75 seconds on the ridge-only path; everything else seconds.
-Measured here (two cores, T3–T4): the four-learner LOBO on the four economic targets 572 s; the
-ridge-only LOBO on those targets about 10 s; the H2(ii) bootstrap (4000 ML factor fits) about 90 s;
-`pytest -m golden` about 12 minutes in all, `pytest -m "golden and not slow"` about 2 minutes,
-`pytest -m smoke` about 25 s. No output needs inference credits, an API key or network access: the
+Measured here (two cores, T3–T4, unloaded to lightly loaded): the four-learner LOBO on the four
+economic targets 572 s; the ridge-only LOBO on those targets 10–20 s; the H2(ii) bootstrap (4000 ML
+factor fits) 90–125 s; `pytest -m golden` 11–12 minutes in all, `pytest -m "golden and not slow"`
+about 2 minutes, `pytest -m smoke` 10–25 s. No output needs inference credits, an API key or network access: the
 package analyses tables (handoff §8).
 
 ## Environment

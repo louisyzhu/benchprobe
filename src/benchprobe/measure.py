@@ -83,13 +83,11 @@ def kmo(z) -> float:
     a, _, _ = _matrix(z)
     _check_finite(a, "indicator matrix")
     _, calculate_kmo = _factor_analyzer()
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        _, overall = calculate_kmo(a)
+    _, overall = calculate_kmo(a)
     return float(overall)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class ParallelAnalysis:
     observed: np.ndarray
     """Eigenvalues of the correlation matrix, descending."""
@@ -145,7 +143,7 @@ def thurstone_weights(R, loadings) -> np.ndarray:
     return np.linalg.pinv(np.asarray(R, dtype=float)) @ np.asarray(loadings, dtype=float)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class Efa:
     loadings: pd.DataFrame
     """Pattern loadings, benchmarks × factors."""
@@ -187,14 +185,22 @@ def efa(
     _check_finite(a, "indicator matrix")
     FactorAnalyzer, _ = _factor_analyzer()
     fa = FactorAnalyzer(n_factors=k, rotation=rotation, method=method)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        fa.fit(a)
-        scores = fa.transform(a)
+    fa.fit(a)
     loadings = np.asarray(fa.loadings_, dtype=float)
     structure = (
         np.asarray(fa.structure_, dtype=float) if fa.structure_ is not None else loadings.copy()
     )
+    # Regression scores exactly as factor_analyzer.transform computes them, without its silent
+    # fallback to the loadings when the correlation matrix cannot be solved: a singular matrix
+    # raises here instead.
+    scaled = (a - np.asarray(fa.mean_, dtype=float)) / np.asarray(fa.std_, dtype=float)
+    try:
+        score_weights = np.linalg.solve(np.asarray(fa.corr_, dtype=float), structure)
+    except np.linalg.LinAlgError as exc:
+        raise ValueError(
+            "factor-score weights cannot be solved: singular correlation matrix"
+        ) from exc
+    scores = scaled @ score_weights
     phi = np.asarray(fa.phi_, dtype=float) if getattr(fa, "phi_", None) is not None else np.eye(k)
     signs = np.ones(k)
     if align_to_mean_score:
@@ -233,6 +239,14 @@ def first_factor_share(z, *, k: int = 3) -> float:
     """
     solution = efa(z, k=k, rotation=None, method="ml", align_to_mean_score=False)
     ssl = solution.ssl.to_numpy()
+    if ssl[0] < ssl.max():
+        warnings.warn(
+            "first_factor_share: column 0 of the unrotated solution is not the largest factor "
+            f"(sums of squared loadings {np.round(ssl, 4).tolist()}); the archive's convention "
+            "is followed, but the value may not be the dominant factor's share",
+            RuntimeWarning,
+            stacklevel=2,
+        )
     return float(ssl[0] / ssl.sum())
 
 
@@ -285,6 +299,8 @@ def date_r2(x, days, *, form: str = "ols") -> float:
         raise ValueError("x and days must have the same length")
     _check_finite(y, "x")
     ss_tot = float(((y - y.mean()) ** 2).sum())
+    if ss_tot == 0.0:
+        raise ValueError("x is constant; R² on days is undefined")
     if form == "ols":
         model = LinearRegression().fit(d.reshape(-1, 1), y)
         return float(model.score(d.reshape(-1, 1), y))
@@ -312,7 +328,7 @@ def date_r2(x, days, *, form: str = "ols") -> float:
     return float(best)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class DropBootstrap:
     point: float
     """Full-sample drop in first-factor share after date residualisation, as a fraction."""

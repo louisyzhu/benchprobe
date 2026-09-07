@@ -59,6 +59,14 @@ without a ticket that says so.
 - Hold-out by task, model, family or context, and effective-sample-size reporting (SPEC §1, "thesis pipeline needs") not implemented at T4 — coordinating session; they need the thesis design, which handoff §8 keeps out of this repository until the OSF deposit. Ticketed then.
 - Predict unit tests carry the `smoke` marker (ridge only; about 20 s) — coordinating session; rule 6's one-minute bound holds for the module and the full smoke set.
 
+## 2026-09-06 — T4.1 review fixes (after the second same-family review)
+
+- Factor scores computed explicitly (`(z − mean)/std @ solve(R, S)`), reproducing `factor_analyzer.transform` without its silent fallback to `Λ` on a singular `R`; blanket `warnings` suppression removed from `measure` (factor_analyzer emits none on the archive grids or under resampling, checked over 300 bootstrap fits) and narrowed to scikit-learn's `ConvergenceWarning` around the inner grid search in `predict` (the archive silences all warnings in its Task-2 setup) — coordinating session; a swallowed substitution would change a reported number without a trace.
+- `io.zscore` raises on a zero-variance column instead of returning NaN; `date_r2` raises on a constant score vector; `first_factor_share` warns if column 0 is not the largest factor; unknown learner names raise `ValueError` on every path; `ladder` and `h4_table` name the missing rung instead of failing with `KeyError`/`IndexError`; `lobo` checks release dates only when rung `i_date` is requested; result dataclasses use identity equality (`eq=False`) — coordinating session; none of these changes a number on the archive grids (smoke and golden sets re-run).
+- `statsmodels` removed from the runtime dependencies (declared at T0 from the archive's requirements, imported nowhere) — coordinating session; lockfile regenerated.
+- Deduplicated frame keeps the `base` key as its last column — coordinating session; the other grids' column order is the snapshot's.
+- Runtime figures in `docs/reproducibility.md` given as ranges measured under light load — coordinating session; the reviewer measured 123 s and 19 s where the first run measured 90 s and 10 s.
+
 ## Open, assigned
 
 - Louis: confirm the recovered four-parameter logistic (T3) against the pre-registration text.

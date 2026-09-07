@@ -112,9 +112,35 @@ def test_date_r2_logistic_fits_a_logistic_curve_better_than_a_line(days):
     assert m.date_r2(y, days, form="logistic") > m.date_r2(y, days, form="ols")
 
 
-def test_date_r2_rejects_unknown_form(days):
+def test_date_r2_rejects_unknown_form_and_constant_scores(days):
     with pytest.raises(ValueError, match="unknown form"):
-        m.date_r2(np.ones(len(days)), days, form="cubic")
+        m.date_r2(np.sin(days / 40.0), days, form="cubic")
+    for form in ("ols", "logistic"):
+        with pytest.raises(ValueError, match="constant"):
+            m.date_r2(np.ones(len(days)), days, form=form)
+
+
+def test_efa_scores_match_factor_analyzer_transform(one_factor):
+    """The explicit score computation reproduces factor_analyzer.transform (no silent fallback)."""
+    FactorAnalyzer, _ = m._factor_analyzer()
+    fa = FactorAnalyzer(n_factors=2, rotation="oblimin", method="ml").fit(one_factor.to_numpy())
+    expected = fa.transform(one_factor.to_numpy())
+    sol = m.efa(one_factor, k=2, rotation="oblimin", align_to_mean_score=False)
+    np.testing.assert_allclose(sol.scores, expected, atol=1e-10)
+
+
+def test_first_factor_share_warns_when_column_zero_is_not_the_largest(monkeypatch, one_factor):
+    """The archive's convention (column 0) is kept, but a re-ordered solution is not silent."""
+    real = m.efa
+
+    def swapped(z, **kwargs):
+        sol = real(z, **kwargs)
+        ssl = sol.ssl.iloc[::-1].to_numpy()  # pretend the small factor came first
+        return m.Efa(**{**sol.__dict__, "ssl": pd.Series(ssl, index=sol.ssl.index)})
+
+    monkeypatch.setattr(m, "efa", swapped)
+    with pytest.warns(RuntimeWarning, match="not the largest"):
+        m.first_factor_share(one_factor, k=2)
 
 
 def test_residualisation_drop_bootstrap_is_seeded_and_ordered(one_factor, days):

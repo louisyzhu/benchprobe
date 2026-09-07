@@ -23,6 +23,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import ElasticNet, Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import GridSearchCV, KFold
@@ -94,6 +95,12 @@ def _resolve_learners(learners) -> dict[str, tuple[Any, dict[str, list]]]:
     if isinstance(learners, Mapping):
         return dict(learners)
     if isinstance(learners, Sequence):
+        unknown = [name for name in learners if name not in registered]
+        if unknown:
+            raise ValueError(
+                f"unknown learner(s) {', '.join(map(repr, unknown))}; registered: "
+                f"{', '.join(registered)}"
+            )
         return {name: registered[name] for name in learners}
     raise TypeError(
         "learners must be 'registered', a learner name, a sequence of names or a mapping"
@@ -128,9 +135,7 @@ def _build_rungs(Ztr, Zte, days_tr, days_te, cov_tr, cov_te, *, k: int, rungs: S
         train["ii_meanidx"], test["ii_meanidx"] = mi_tr, mi_te
     if any(r in rungs for r in ("iii_f1", "iv_kfac", "v_kfac_cov")):
         fa = FactorAnalyzer(n_factors=k, rotation="oblimin", method="ml")
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            fa.fit(Ztr_s)
+        fa.fit(Ztr_s)
         W = thurstone_weights(np.corrcoef(Ztr_s, rowvar=False), fa.loadings_)
         Ftr, Fte = Ztr_s @ W, Zte_s @ W
         for c in range(k):
@@ -147,7 +152,7 @@ def _build_rungs(Ztr, Zte, days_tr, days_te, cov_tr, cov_te, *, k: int, rungs: S
     return train, test
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class LoboResult:
     metrics: pd.DataFrame
     """One row per (target, rung, learner), columns ``METRIC_COLUMNS``."""
@@ -206,8 +211,12 @@ def lobo(
         predictors = [c for c in benchmarks if c != target]
         Z = frame[predictors].astype(float).to_numpy()
         y = frame[target].astype(float).to_numpy()
-        if not (np.isfinite(Z).all() and np.isfinite(y).all() and np.isfinite(days).all()):
+        if not (np.isfinite(Z).all() and np.isfinite(y).all()):
             raise ValueError(f"grid {grid.name!r} carries NaN in the LOBO inputs for {target!r}")
+        if "i_date" in rungs and not np.isfinite(days).all():
+            raise ValueError(
+                f"grid {grid.name!r} carries NaN release dates; rung i_date needs them"
+            )
         for rung in rungs:
             for name, (estimator, param_grid) in learner_map.items():
                 yt, yp, rt, rp = [], [], [], []
@@ -224,7 +233,9 @@ def lobo(
                         Xtr[np.isnan(Xtr[:, lp]), lp] = m
                         Xte[np.isnan(Xte[:, lp]), lp] = m
                     with warnings.catch_warnings():
-                        warnings.simplefilter("ignore")
+                        warnings.simplefilter(
+                            "ignore", ConvergenceWarning
+                        )  # elastic net, as the archive
                         search = GridSearchCV(
                             estimator,
                             param_grid,
@@ -295,6 +306,8 @@ def ladder(
 
     rows = {}
     for rung in result.rungs:
+        if not (e.rung == rung).any():
+            raise ValueError(f"no metrics for rung {rung!r} on the requested targets")
         by_learner = e[e.rung == rung].groupby("learner").test_rmse.agg(pool).sort_values()
         best = by_learner.index[0]
         b = e[(e.rung == rung) & (e.learner == best)]
@@ -312,7 +325,7 @@ def ladder(
     return table
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class DeltaMse:
     point: float
     ci: tuple[float, float]
@@ -394,6 +407,12 @@ def h4_table(
     kmodel, dMSE, ci_lo, ci_hi, excludes_zero``. The archived table itself is one the notebook reads
     rather than derives, so its intervals are reproduced statistically, not exactly.
     """
+    missing = [r for r in (*baselines, model, *per_target_baselines) if r not in result.rungs]
+    if missing:
+        raise ValueError(
+            f"rung(s) {', '.join(map(repr, missing))} not in this result; available: "
+            f"{', '.join(result.rungs)}"
+        )
     rng = np.random.default_rng(seed)
     rows = []
     for baseline in baselines:
