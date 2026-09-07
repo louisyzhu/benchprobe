@@ -71,6 +71,19 @@ def test_provenance_record_is_json_serialisable_and_complete(snapshot):
     }
 
 
+def test_snapshot_file_returns_verified_paths_only(snapshot):
+    path = snapshot.file("aa_analysis_models.csv")
+    assert path.is_file() and path.parent == snapshot.folder
+    with pytest.raises(KeyError):
+        snapshot.file("not_listed.csv")
+
+
+def test_multi_file_snapshot_verifies_every_listed_file():
+    judge = bio.load_snapshot("judge_2026-08-31")
+    assert set(judge.manifest["files"]) == {"judge_item_bank.csv", "sweep_grid.json"}
+    assert judge.file("sweep_grid.json").is_file() and judge.table.shape == (210, 38)
+
+
 def test_corrupted_table_raises(snapshot_copy):
     path = snapshot_copy / SNAPSHOT / "aa_analysis_models.csv"
     data = bytearray(path.read_bytes())

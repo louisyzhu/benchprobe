@@ -46,13 +46,14 @@ Everything is configured by environment variable; nothing in the repository refe
   and a collection-only pass over the golden tests), never the golden tests themselves.
 - `tests/golden/` — the locked numbers of the studies benchprobe is extracted from, each with its
   tolerance. `test_one_capability.py` encodes the One Capability results on the 6 July 2026 snapshot
-  (KMO 0.933, first-factor share 74.5 %, pooled LOBO ΔMSE +0.037, and the rest). These tests are the
+  (KMO 0.933, first-factor share 74.5 %, pooled LOBO ΔMSE +0.037, and the rest); `test_judge.py` the
+  JUDGe real-bank quantities and simulations. These tests are the
   ship condition: they were written before the code and are never edited to pass. A failing golden
-  test is a finding and is reported as such. As of T4 all twenty pass (`docs/reproducibility.md`
+  test is a finding and is reported as such. As of T5 all twenty-eight pass (`docs/reproducibility.md`
   states each row's tier and recomputed value); the three `slow` rows refit four learners and take
   about ten minutes.
-- `tests/io/`, `tests/measure/`, `tests/predict/` — unit tests on synthetic data and the vendored
-  grid, in the smoke set.
+- `tests/io/`, `tests/measure/`, `tests/predict/`, `tests/trust/` — unit tests on synthetic data and
+  the vendored snapshots, in the smoke set.
 
 `docs/reproducibility.md` states, for every output, whether it is *recomputed*, *statistically
 reproduced* or *regenerated*, with tolerances, seeds, expected runtime and cost. `docs/decisions.md`
@@ -62,9 +63,11 @@ is one dated line per design decision.
 
 `benchprobe/data/one_capability_2026-07-06/` vendors the analysis-ready table of
 [frontier-ai-economic-validity](https://github.com/louisyzhu/frontier-ai-economic-validity) (CC BY 4.0;
-figures originate with Artificial Analysis and Epoch AI, see the folder's README) with a manifest
-recording its SHA-256, which `benchprobe.io.load_snapshot` verifies on every load (and the smoke test
-checks independently). Raw snapshots are not vendored. The package analyses tables; it
+figures originate with Artificial Analysis and Epoch AI, see the folder's README), and
+`benchprobe/data/judge_2026-08-31/` the item bank and published simulation grid of
+[llm-judge-reliability](https://github.com/louisyzhu/llm-judge-reliability) (CC BY 4.0). Each folder
+carries a manifest recording its files' SHA-256, which `benchprobe.io.load_snapshot` verifies on every
+load (and the smoke test checks independently). Raw snapshots are not vendored. The package analyses tables; it
 performs no inference and needs no credentials.
 
 ## Licence

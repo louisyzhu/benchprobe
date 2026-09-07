@@ -47,6 +47,8 @@ an amendment changes the test's call, never its number.
 **`benchprobe.io`** (T2 — confirmed 6 September 2026, as implemented)
 
 - `load_snapshot(name: str = "one_capability_2026-07-06", *, data_dir: str | os.PathLike | None = None) -> Snapshot`
+  (T5 addition: `.folder`, the verified snapshot folder, and `.file(name)`, the path of a
+  manifest-listed file — a `KeyError` for anything the manifest does not list.)
   Loads the table the snapshot's `MANIFEST.json` names in its `table` field, after verifying the
   SHA-256 and size of every file the manifest lists; a mismatch, a missing file or a manifest whose
   `name` differs from its folder raises `SnapshotIntegrityError` (never a warning). `Snapshot` carries
@@ -159,11 +161,44 @@ an amendment changes the test's call, never its number.
 - Hold-out by task, model, family or context, and effective-sample-size reporting (§1, "thesis
   pipeline needs"): deferred to a ticket that can name the thesis design (handoff §8).
 
-**`benchprobe.trust`**, **`benchprobe.irt`**, **`benchprobe.report`** — signatures are agreed at T5,
-T6 and T7. Note for T5: the JUDGe archive (`estimators.py`) carries KR-20, KR-21, the intra-item
-phi, beta-binomial fit and goodness of fit, Livingston–Lewis, Φ(λ), classification accuracy and a
-cluster bootstrap; Krippendorff's α and Cohen's κ are in scope by §1 but are not in that archive and
-will be new code under the T5 ticket.
+**`benchprobe.trust`** (T5 — agreed and implemented 7 September 2026)
+
+Extracted verbatim from the JUDGe archive (`estimators.py`, `sweeps.py`, commit `126d1bce`), archive
+names kept. Verdict matrices are `(n_items, K)` 0/1 arrays; totals are `(n_items,)`.
+
+- `load_bank(snapshot=None, *, K=10) -> Bank` — the archive's `load_bank`: rows carrying judge
+  verdicts (180 of 210) as `.gold` and `.judge` element matrices, `.gold_total`, `.judge_total`,
+  `.question_id` (the cluster for bootstraps), `.item_id`, `.K`, `.n`, `.n_items_total`,
+  `.judge_model`. Default snapshot `judge_2026-08-31` (vendored: `judge_item_bank.csv`,
+  `sweep_grid.json`). `published_grid(snapshot=None) -> dict` returns the published simulation values.
+- Reliability: `kr20(P)`, `kr21(tot, K)`, `intra_item_rho(P)`.
+- Beta-binomial: `bb_mle(tot, K) -> (alpha, beta)`, `bb_pmf(alpha, beta, K)`,
+  `bb_gof(tot, K, min_expected=5) -> BetaBinomialFit(chi2, df, p, alpha, beta)`.
+- Classification: `livingston_lewis(tot, K, cut, n_grid=None) -> LivingstonLewis(decision_consistency,
+  classification_accuracy)` (accuracy indexed to the instrument's own true score, as the archive
+  warns); `phi_lambda(P, cut)` — the G-theory dependability index Φ(λ), a ratio of variance
+  components; `classification_accuracy(judge_tot, ref_tot, cut)`;
+  `cluster_bootstrap(stat_fn, cluster_ids, B=2000, seed=0)` (archive draw order; non-finite draws
+  dropped); `agreement_with_interval(judge_tot, ref_tot, cut, *, cluster_ids, B=2000, seed=0) ->
+  Agreement(point, ci, draws, cut, n_clusters, B, seed)` — human-vs-grader agreement with a
+  cluster-bootstrap 95 % interval.
+- Agreement coefficients (new code under T5, not in the archive): `cohens_kappa(a, b, *,
+  weights=None)` (scikit-learn's `cohen_kappa_score`); `krippendorffs_alpha(data, *,
+  level="nominal")` for a raters × units matrix with NaN for missing ratings, levels nominal,
+  ordinal, interval, ratio (Krippendorff 2011; reproduces its worked example, nominal 0.743 and
+  interval 0.849, and the `krippendorff` package to 1e-15 on random fixtures).
+- G-theory: `gstudy_two_way(X) -> GStudy(v_items, v_facet, v_resid, Phi)` — variance components of a
+  fully crossed items × facet design by two-way random-effects ANOVA (negative estimates truncated at
+  zero), Φ for one condition of the facet; the archive's phrasing G-study inline computation.
+- Real bank: `bank_summary(bank) -> dict` — KR-20 on judge and gold, per-element error, judge–gold
+  correlation, leniency, beta-binomial fit on judge totals (the archive README's bit-for-bit set).
+- Simulations (archive `sweeps.py`, seeds and draw order preserved): `simulate_bank(spread, err,
+  n=210, K=10, rng=None)`, `two_way_sweep(reps=60, seed=11, *, spreads, errors, n, K) -> (mean, sd)`,
+  `phi_control(seed=101, n=4000)`, `ll_estimand_control(seed=303, n=4000)`, `phrasing_gstudy(v_phrasing,
+  v_resid, n=210, R=3, sims=200, seed=7)`, `sweeps()` (the archive's main block, in its order).
+  Constants `K_DEFAULT`, `N_ITEMS`, `MEASURED_ERROR`, `BANK_SPREADS`, `JUDGE_ERRORS`.
+
+**`benchprobe.irt`**, **`benchprobe.report`** — signatures are agreed at T6 and T7.
 
 ## 3. Names used by the archive and kept here
 
