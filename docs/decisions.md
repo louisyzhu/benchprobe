@@ -31,9 +31,16 @@ without a ticket that says so.
 - `measure.residualisation_drop_bootstrap` added to SPEC §2 as the H2(ii) bootstrap (model resampling, B = 2000, seed 42) so the [−5.3, +32.7] row has a callable — coordinating session; the archive computes it inline in the "Registration-honest robustness statistics" cell.
 - `economic_dense` grid is counted only; its `.benchmarks` are not asserted — coordinating session; the grid is incomplete on the other nine benchmarks by construction and no §6 row computes on it.
 
+## 2026-09-06 — T2 io
+
+- `MANIFEST.json` gains a `table` field naming the file to load; every file under `files` is hashed and size-checked on load — coordinating session; one manifest schema for every future snapshot (thesis tables included) without hard-coding file names in `io`.
+- Grids reproduce the archive's row selections verbatim, including `deduplicate_by_base_model`'s `groupby("base").first()` — coordinating session. Finding: pandas' `first()` takes the first *non-null* value per column, so for 4 of the 320 base models the deduplicated row carries a benchmark score from a lower-ranked configuration; a strict one-row-per-base-model selection (`head(1)`) gives 86 complete rows, the archived computation 89. benchprobe reproduces the archived 89 (and its 24.1 pp / +0.038 rows); the paper's R1 wording ("one row per base model") is a finding for the coordinating thread, not something this repository changes. `tests/io/test_io.py::test_deduplication_is_first_non_null_per_column_as_archived` pins both counts.
+- `economic_dense` is a coverage grid: `.z` keeps NaN and `.days` may be NaN (one of its 103 rows has no release date); every other grid is strict — coordinating session; no §6 row computes on it, and the strict grids must never carry NaN into the estimators.
+- `io` unit tests carry the `smoke` marker — coordinating session; they run in well under a second and rule 6 wants every module's smoke test in CI.
+- Config-driven runs deferred to T7 — coordinating session; nothing before the one-command reproduction needs a config file, and rule 4 forbids speculative scope.
+
 ## Open, assigned
 
-- T2: source of the grids' base-model deduplication key (regex in the archive's R1 block) — extract verbatim.
 - T3: whether the sklearn `check_array` shim the archive applies to factor_analyzer 0.5.1 is still needed under the locked versions; whether to pin the archive's exact numeric-stack versions.
 - T3: the logistic functional form behind the paper's date-R² of 0.505 (not in the archived notebook; OLS 0.477 is). Recover from the pre-registration or Phase 2 working code before implementing `date_r2(form="logistic")`.
 - T4: the archive draws the three baseline bootstraps (`i_date`, `ii_meanidx`, `iii_f1`) from one `default_rng(42)` stream in that order; exact reproduction of [+0.019, +0.055] needs the same order, otherwise the row is statistically reproduced.
