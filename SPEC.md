@@ -113,26 +113,45 @@ an amendment changes the test's call, never its number.
   pre-registered form because it reproduces all three archived factor values, 0.505 / 0.364 / 0.286
   (`docs/decisions.md`, T3).
 
-**`benchprobe.predict`** (T4)
+**`benchprobe.predict`** (T4 — confirmed 6 September 2026, as implemented)
 
-- `lobo(grid: Grid, *, targets: Sequence[str], k: int = 3, learners: str | Mapping = "registered", outer_folds: int = 5, inner_folds: int = 5, seed: int = 0, covariates: bool = True) -> LoboResult`
+- `lobo(grid: Grid, *, targets: Sequence[str], k: int = 3, learners: str | Sequence[str] | Mapping = "registered", outer_folds: int = 5, inner_folds: int = 5, seed: int = 0, covariates: bool = True, rungs: Sequence[str] = RUNGS) -> LoboResult`
   Leave-one-benchmark-out: each target is predicted from the remaining benchmarks of the grid. Inside
   every outer fold the predictors are standardised on the training rows, the `k`-factor oblimin ML
   solution is fitted on the training rows only and projected to the held-out rows by Thurstone weights,
   and each rung (§3) is fitted with inner `GridSearchCV` over the registered learner grids.
   `learners="registered"` is the archive's four (ridge, elastic net, random forest, gradient boosting)
-  with their grids; `learners="ridge"` is the fast path. `.metrics` is a DataFrame with the archive's
-  columns (`target, block, rung, learner, train_rmse, test_rmse, train_mae, test_mae, train_r2,
-  test_r2, test_mse`); `.oof` maps `(target, rung, learner)` to out-of-fold `(y_true, y_pred)`.
-- `ladder(result: LoboResult, *, targets: Sequence[str]) -> DataFrame`
+  with their grids (`registered_learners()`); a learner name (`"ridge"`, the fast path), a sequence
+  of names, or a mapping `name → (estimator, grid)` are also accepted. `rungs` selects a subset of
+  `RUNGS`; `v_kfac_cov` is dropped when `covariates=False` or the grid lacks `isReasoning`,
+  `isOpenWeights`, `totalParameters`. `.metrics` is a DataFrame with the archive's columns
+  (`METRIC_COLUMNS`: `target, block, rung, learner, train_rmse, test_rmse, train_mae, test_mae,
+  train_r2, test_r2, test_mse`; the train columns pool the training-fold predictions across outer
+  folds, as the archive does); `.oof` maps `(target, rung, learner)` to out-of-fold `(y_true,
+  y_pred)` on the training-fold-standardised target; `.grid`, `.n`, `.targets`, `.rungs`,
+  `.learners`, `.k`, `.outer_folds`, `.inner_folds`, `.seed` record the run. NaN in any input raises.
+- `ladder(result: LoboResult, *, targets: Sequence[str], pooling: str = "mean_rmse") -> DataFrame`
   Indexed by rung (`i_date` … `v_kfac_cov`), columns `learner`, `train_rmse`, `test_rmse`, `test_r2`,
-  `runner_up_gap`, as the archive's `_ladder` emits: the best learner by pooled test RMSE over
-  `targets` (square root of the mean test MSE), that learner's pooled train RMSE (the same pooling),
-  its pooled test RMSE, its mean test R² across targets, and the pooled-RMSE gap to the runner-up.
+  `runner_up_gap`: the best learner by pooled test RMSE over `targets`, that learner's pooled train
+  RMSE (the same pooling), its pooled test RMSE, its mean test R² across targets, and the
+  pooled-RMSE gap to the runner-up. `pooling="mean_rmse"` is the arithmetic mean of per-target
+  RMSEs — the pooling that reproduces every row of the archived `lobo_rung_summary.csv` and the
+  paper's ladder table; `pooling="rms"` (square root of the mean per-target MSE) is what the
+  archive notebook's `_ladder` helper computes and does not reproduce that table (T4 finding,
+  `docs/decisions.md`).
 - `pooled_delta_mse(result: LoboResult, *, baseline: str = "ii_meanidx", model: str = "iv_kfac", targets: Sequence[str], learner: str = "ridge", B: int = 2000, seed: int = 42) -> DeltaMse`
-  Pooled ΔMSE = MSE(baseline) − MSE(model) over the concatenated out-of-fold predictions of `targets`,
-  with a percentile bootstrap over models (`B` resamples). `.point`, `.ci` (2.5th, 97.5th percentiles),
-  `.per_target` (DataFrame of the same per target), `.n` (number of pooled residual differences).
+  Pooled ΔMSE = MSE(baseline) − MSE(model) over the concatenated out-of-fold rows of `targets`, with
+  a percentile bootstrap over those rows (`B` resamples of `rng.integers(0, n, n)`, the archive's
+  draw). `.point`, `.ci` (2.5th, 97.5th percentiles), `.per_target` (DataFrame: `dMSE`, `n` per
+  target), `.draws`, `.n`, `.B`, `.seed`, `.baseline`, `.model`, `.learner`. An optional `stream`
+  (`numpy.random.Generator`) replaces `seed` so that a sequence of comparisons can be drawn from one
+  stream in the archive's order.
+- `h4_table(result, *, baselines=("i_date", "ii_meanidx", "iii_f1"), model="iv_kfac", targets, learner="ridge", B=2000, seed=42, per_target_baselines=("ii_meanidx",)) -> DataFrame`
+  The archive's H4 table (`h4_bootstrap_dmse.csv` layout: `scope, baseline, kmodel, dMSE, ci_lo,
+  ci_hi, excludes_zero`), all intervals drawn from one `default_rng(seed)` in the order of the
+  archive's H4 cell: pooled per baseline, then per target per `per_target_baselines`.
+- Hold-out by task, model, family or context, and effective-sample-size reporting (§1, "thesis
+  pipeline needs"): deferred to a ticket that can name the thesis design (handoff §8).
 
 **`benchprobe.trust`**, **`benchprobe.irt`**, **`benchprobe.report`** — signatures are agreed at T5,
 T6 and T7. Note for T5: the JUDGe archive (`estimators.py`) carries KR-20, KR-21, the intra-item

@@ -31,12 +31,12 @@ recomputed value from the ticket that computes it. "Archive file" is where the v
 | Residualisation drop, date only | compute_known (58) | 16.5 pp | subsample_date_compute.csv (16.48) | 1.0 pp | recomputed (66.32 → 49.84; subsample definition confirmed, open item 2) | 16.479 pp | T3 |
 | Residualised oblimin loadings, economic benchmarks on the economic factor | complete_case | 1.01 / 0.84 / 0.54 / 0.50 | loadings_residualised.csv; paper Table tab:loadings | 0.02 | recomputed (economic factor = F1; φ 0.3643 / 0.6718 / 0.7205 and uniquenesses also match the archive) | 1.0063 / 0.8418 / 0.5420 / 0.4991 | T3 |
 | Largest economic cross-loading | complete_case | 0.38 | loadings_residualised.csv (0.3826) | 0.02 | recomputed | 0.3826 | T3 |
-| Pooled economic ΔMSE, mean index vs k-factor, ridge | complete_case | +0.037 | h4_bootstrap_dmse.csv; task2_prediction_results.json (0.037342) | 0.002 | not yet computed | — | T4 |
-| Its bootstrap 95 % interval | complete_case | [+0.019, +0.055] | h4_bootstrap_dmse.csv | 0.005 per endpoint | not yet computed; statistically reproduced unless draw order matches | — | T4 |
-| Pooled economic ΔMSE | deduplicated (89) | +0.038 | h4_bootstrap_dedup.csv (0.0378) | 0.002 | not yet computed | — | T4 |
-| Ladder, single index (ii), best learner | complete_case, economic block | RMSE 0.474, R² 0.771 | lobo_rung_summary.csv | 0.005 each | not yet computed (slow: four learners) | — | T4 |
-| Ladder, k-factor (iv), best learner | same | RMSE 0.433, R² 0.808 | lobo_rung_summary.csv | 0.005 each | not yet computed (slow) | — | T4 |
-| Ladder, first factor alone (iii), best learner | same | RMSE 0.950 | lobo_rung_summary.csv | 0.005 | not yet computed (slow; platform-sensitive per archive README) | — | T4 |
+| Pooled economic ΔMSE, mean index vs k-factor, ridge | complete_case | +0.037 | h4_bootstrap_dmse.csv; task2_prediction_results.json (0.037342) | 0.002 | recomputed (per target 0.0263 / 0.0284 / 0.0564 / 0.0383 as archived) | +0.0373 | T4 |
+| Its bootstrap 95 % interval | complete_case | [+0.019, +0.055] | h4_bootstrap_dmse.csv | 0.005 per endpoint | statistically reproduced (the archived table is read, not derived, by the notebook; its draw order is unrecoverable — decisions T4) | [+0.0180, +0.0558] fresh stream; [+0.0189, +0.0556] in H4-cell order | T4 |
+| Pooled economic ΔMSE | deduplicated (89) | +0.038 | h4_bootstrap_dedup.csv (0.0378) | 0.002 | recomputed, interval too ([0.0198, 0.0561] exactly; per target 0.0039 / 0.0370 / 0.0721 / 0.0381) | +0.0378 | T4 |
+| Ladder, single index (ii), best learner | complete_case, economic block | RMSE 0.474, R² 0.771 | lobo_rung_summary.csv | 0.005 each | recomputed (ridge; mean-of-RMSE pooling, decisions T4; four learners, about 10 min on two cores) | RMSE 0.4745, R² 0.7710 (train RMSE 0.4631 vs 0.463) | T4 |
+| Ladder, k-factor (iv), best learner | same | RMSE 0.433, R² 0.808 | lobo_rung_summary.csv | 0.005 each | recomputed (ridge) | RMSE 0.4333, R² 0.8077 (train 0.4098 vs 0.410) | T4 |
+| Ladder, first factor alone (iii), best learner | same | RMSE 0.950 | lobo_rung_summary.csv | 0.005 | recomputed (elastic net; R² 0.1096 vs 0.110; the other two rungs the paper prints, i and v, give rf 0.7406 / R² 0.4587 and ridge 0.4382 / R² 0.8005 against 0.741 / 0.459 and 0.438 / 0.800) | RMSE 0.9503 | T4 |
 | Grid sizes | complete_case, deduplicated, compute_known, economic_dense | 96, 89, 58, 103 | task1_structure_results.json, dedup_r1_comparison.csv, subsample_date_compute.csv, archive README | exact | recomputed | 96, 89, 58, 103 (T2, `pytest -m golden -k grid_size`: 4 passed) | T2 |
 
 ## Seeds and random streams recovered from the archives
@@ -64,8 +64,12 @@ statistically-reproduced tier by construction. Details at T5.
 
 From the One Capability archive README, laptop-class 12-core machine: the whole notebook about
 26 minutes end to end with all four learners, nearly all of it in the LOBO ladder and the
-hyperparameter-table sweep; about 75 seconds on the ridge-only path; everything else seconds. No output
-needs inference credits, an API key or network access: the package analyses tables (handoff §8).
+hyperparameter-table sweep; about 75 seconds on the ridge-only path; everything else seconds.
+Measured here (two cores, T3–T4): the four-learner LOBO on the four economic targets 572 s; the
+ridge-only LOBO on those targets about 10 s; the H2(ii) bootstrap (4000 ML factor fits) about 90 s;
+`pytest -m golden` about 12 minutes in all, `pytest -m "golden and not slow"` about 2 minutes,
+`pytest -m smoke` about 25 s. No output needs inference credits, an API key or network access: the
+package analyses tables (handoff §8).
 
 ## Environment
 
