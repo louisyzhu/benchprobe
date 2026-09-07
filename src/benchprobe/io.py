@@ -356,7 +356,9 @@ def deduplicate_by_base_model(table: pd.DataFrame) -> pd.DataFrame:
     d = table.copy()
     d["base"] = d["name"].apply(base_model_key)
     d["_ii"] = d["intelligenceIndex"].fillna(-np.inf)
-    out = d.sort_values("_ii", ascending=False).groupby("base", as_index=False).first()
+    out = (
+        d.sort_values("_ii", ascending=False, kind="stable").groupby("base", as_index=False).first()
+    )
     out = out.drop(columns=["_ii"])
     return out[[c for c in out.columns if c != "base"] + ["base"]]  # ``base`` last, as an extra
 

@@ -46,6 +46,30 @@ def test_interval_agreement_scales_by_monte_carlo_spread():
     reruns = np.array([[0.10, 0.50], [0.11, 0.52], [0.09, 0.48], [0.10, 0.50]])
     z, per = r.interval_agreement([0.10, 0.56], [0.10, 0.50], reruns, rounding=0.0)
     assert per[0] == 0 and z == pytest.approx(0.06 / reruns[:, 1].std(ddof=1))
+    # NaN anywhere is a failure, never agreement
+    assert r.interval_agreement([np.nan, 0.5], [0.1, 0.5], reruns, rounding=0.0)[0] == np.inf
+    assert r.interval_agreement([0.1, 0.5], [0.1, np.nan], reruns, rounding=0.0)[0] == np.inf
+    assert r.interval_agreement([0.1, 0.5], [0.1, 0.5], reruns * np.nan, rounding=0.0)[0] == np.inf
+
+
+def test_compare_treats_nan_as_failure():
+    a = pd.DataFrame({"key": ["p", "q"], "v": [1.0, 2.0]})
+    b = pd.DataFrame({"key": ["p", "q"], "v": [1.0, np.nan]})
+    worst, _ = r.compare(b, a, keys=["key"])
+    assert np.isnan(worst) and not (worst <= 1.0)
+
+
+def test_outside_tolerance_caption_says_so(snapshot):
+    text = r.caption(
+        "x.csv",
+        r.RECOMPUTED,
+        study="s",
+        snapshot=snapshot,
+        deviation=0.5,
+        tolerance=0.1,
+        within=False,
+    )
+    assert "NOT reproduced within tolerance" in text and "not adjusted" in text
 
 
 def test_config_defaults_and_unknown_keys(tmp_path):
@@ -88,6 +112,9 @@ def test_quick_run_deterministic_tables_match_the_archive(quick_run):
         assert t.tier == r.RECOMPUTED and t.within_tolerance, (name, t.max_abs_deviation)
     assert by_name["cluster_validation.csv"].tier == r.REGENERATED
     assert by_name["lobo_rung_summary.csv"].tier == r.REGENERATED  # fast path
+    for name in ("h4_bootstrap_dmse.csv", "ksweep_rung_iv.csv"):  # not judged on the quick path
+        assert by_name[name].within_tolerance is None
+        assert "not judged" in " ".join(by_name[name].notes)
 
 
 def test_cli_wires_config_and_flags(tmp_path, monkeypatch, capsys):

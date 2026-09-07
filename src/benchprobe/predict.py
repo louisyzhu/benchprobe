@@ -139,7 +139,10 @@ def _build_rungs(Ztr, Zte, days_tr, days_te, cov_tr, cov_te, *, k: int, rungs: S
         W = thurstone_weights(np.corrcoef(Ztr_s, rowvar=False), fa.loadings_)
         Ftr, Fte = Ztr_s @ W, Zte_s @ W
         for c in range(k):
-            if np.corrcoef(Ftr[:, c], mi_tr.ravel())[0, 1] < 0:
+            corr = np.corrcoef(Ftr[:, c], mi_tr.ravel())[0, 1]
+            if not np.isfinite(corr):
+                raise ValueError("a factor score is constant on the training fold; cannot align")
+            if corr < 0:
                 Ftr[:, c] *= -1
                 Fte[:, c] *= -1
         if "iii_f1" in rungs:
@@ -313,7 +316,9 @@ def ladder(
     for rung in result.rungs:
         if not (e.rung == rung).any():
             raise ValueError(f"no metrics for rung {rung!r} on the requested targets")
-        by_learner = e[e.rung == rung].groupby("learner").test_rmse.agg(pool).sort_values()
+        by_learner = (
+            e[e.rung == rung].groupby("learner").test_rmse.agg(pool).sort_values(kind="stable")
+        )
         best = by_learner.index[0]
         b = e[(e.rung == rung) & (e.learner == best)]
         rows[rung] = {

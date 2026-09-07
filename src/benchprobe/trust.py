@@ -336,6 +336,8 @@ def agreement_with_interval(
         B=B,
         seed=seed,
     )
+    if draws.size == 0:
+        raise ValueError("every bootstrap draw was non-finite; no interval")
     lo, hi = np.percentile(draws, [2.5, 97.5])
     return Agreement(
         point=point,

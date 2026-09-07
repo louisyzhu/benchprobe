@@ -125,10 +125,22 @@ def caption(
     deviation: float | None = None,
     tolerance: float | None = None,
     notes: list[str] | None = None,
+    within: bool | None = None,
 ) -> str:
-    """The boundary statement every emitted table carries (rules 7 and 8)."""
+    """The boundary statement every emitted table carries (rules 7 and 8). A table whose
+    deviation exceeds its tolerance says so in the caption instead of asserting its tier."""
     src = snapshot.manifest.get("source", {})
     origin = f"{src.get('repository', '?')} @ {str(src.get('commit', '?'))[:8]}"
+    if within is False and tier in (RECOMPUTED, STATISTICAL):
+        text = (
+            f"{name} — NOT reproduced within tolerance by benchprobe {__version__} from snapshot "
+            f"{snapshot.name} (SHA-256 {snapshot.sha256[:12]}…) for {study}: intended tier "
+            f"{tier}; deviation {deviation:.3g} against tolerance {tolerance:g}. Reported, not "
+            f"adjusted (rules 1 and 3). Archived table: {origin}."
+        )
+        for note in notes or []:
+            text += f" {note}"
+        return text
     if tier == RECOMPUTED:
         text = (
             f"{name} — recomputed by benchprobe {__version__} from snapshot {snapshot.name} "
@@ -192,7 +204,11 @@ def compare(
     dev = pd.DataFrame({k: merged[k] for k in keys})
     for c in numeric:
         dev[c] = (merged[f"{c}_archived"].astype(float) - merged[f"{c}_new"].astype(float)).abs()
-    worst = float(np.nanmax(dev[numeric].to_numpy())) if numeric else 0.0
+    values = dev[numeric].to_numpy(dtype=float) if numeric else np.zeros((0, 0))
+    if values.size and not np.isfinite(values).all():
+        worst = float("nan")  # a NaN cell is a failure, never a zero deviation
+    else:
+        worst = float(values.max()) if values.size else 0.0
     return worst, dev
 
 
@@ -203,15 +219,27 @@ def interval_agreement(
     deviations. ``reruns`` is ``(n_seeds, n_cells)`` from the same bootstrap under other seeds;
     ``rounding`` is the archive's half-unit of precision, subtracted from each deviation first.
     Returns the largest z and the per-cell z (0 where the deviation is inside the rounding)."""
+    archived = np.asarray(archived, float)
+    ours = np.asarray(ours, float)
     sd = reruns.std(axis=0, ddof=1)
-    excess = np.maximum(np.abs(np.asarray(archived, float) - np.asarray(ours, float)) - rounding, 0)
+    diff = np.abs(archived - ours)
+    excess = np.maximum(diff - rounding, 0)
     with np.errstate(divide="ignore", invalid="ignore"):
         z = np.where(excess > 0, excess / sd, 0.0)
-    z = np.where(np.isfinite(z), z, np.inf)
+    # a NaN on either side, or a NaN spread, is a failure, never agreement
+    bad = ~np.isfinite(archived) | ~np.isfinite(ours) | ~np.isfinite(sd) | ~np.isfinite(z)
+    z = np.where(bad, np.inf, z)
     return float(np.max(z)) if z.size else 0.0, z
 
 
 MC_Z_TOLERANCE = 3.0
+
+
+def _flag_flips(new: pd.DataFrame, archived: pd.DataFrame, keys: list[str]) -> list[str]:
+    """Rows whose archived ``excludes_zero`` conclusion differs from the recomputed one."""
+    merged = archived.merge(new, on=keys, suffixes=("_archived", "_new"))
+    flips = merged[merged["excludes_zero_archived"] != merged["excludes_zero_new"]]
+    return [" / ".join(str(r[k]) for k in keys) for _, r in flips.iterrows()]
 
 
 def _read_archived(snapshot: bio.Snapshot, name: str):
@@ -299,6 +327,9 @@ def reproduce_one_capability(
     started = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
+    for stale in (*ONE_CAPABILITY_TABLES, "captions.md", "comparison.csv", "provenance.json"):
+        if (out / stale).exists():
+            (out / stale).unlink()  # only files this run writes; nothing else is touched
     snap = snapshot if snapshot is not None else bio.load_snapshot(bio.DEFAULT_SNAPSHOT)
     study = "One Capability or Many? (arXiv:2608.29420)"
     n_reruns = 3 if quick else 20
@@ -307,9 +338,25 @@ def reproduce_one_capability(
         parallel_analysis_iter = min(parallel_analysis_iter, 100)
     results: list[TableResult] = []
 
-    def record(name, tier, path, dev=None, tol=None, notes=None):
+    def record(name, tier, path, dev=None, tol=None, notes=None, judged=True):
+        notes = list(notes or [])
+        if not judged:
+            notes.append(
+                "Quick run (shrunk bootstraps): the Monte-Carlo criterion is not applied and this "
+                "table is not judged; the point values are the recomputed ones."
+            )
+            within = None
+        else:
+            within = None if dev is None else bool(dev <= tol)
         cap = caption(
-            name, tier, study=study, snapshot=snap, deviation=dev, tolerance=tol, notes=notes
+            name,
+            tier,
+            study=study,
+            snapshot=snap,
+            deviation=dev,
+            tolerance=tol,
+            notes=notes,
+            within=within,
         )
         results.append(
             TableResult(
@@ -319,8 +366,8 @@ def reproduce_one_capability(
                 caption=cap,
                 max_abs_deviation=dev,
                 tolerance=tol,
-                within_tolerance=(None if dev is None else bool(dev <= tol)),
-                notes=list(notes or []),
+                within_tolerance=within,
+                notes=notes,
             )
         )
 
@@ -507,19 +554,23 @@ def reproduce_one_capability(
         h4[c] = h4[c].round(3)
     dev_pt, _ = compare(h4, arch, keys=keys, numeric=["dMSE"])
     dev_ci, _ = compare(h4, arch, keys=keys, numeric=["ci_lo", "ci_hi"])
-    record(
-        name,
-        STATISTICAL,
-        _write(out, name, h4),
-        max_z,
-        MC_Z_TOLERANCE,
-        [
-            f"Point estimates deviate at most {dev_pt:.3g} from the archive (both rounded to 3 dp);"
-            f" interval endpoints at most {dev_ci:.3g}, which is {max_z:.2f} Monte-Carlo standard"
-            f" deviations at the worst cell ({n_reruns} re-runs of the bootstrap under other seeds;"
-            " the deviation column carries this z, the tolerance is 3)."
-        ],
+    flips = _flag_flips(h4, arch, keys)
+    if dev_pt > 1e-3:
+        max_z = float("inf")  # a point estimate off at the printed precision is not reproduced
+    if flips:
+        max_z = float("inf")
+    notes = [
+        f"Point estimates deviate at most {dev_pt:.3g} from the archive (both rounded to 3 dp,"
+        f" tolerance 1e-3); interval endpoints at most {dev_ci:.3g}, which is {max_z:.2f}"
+        f" Monte-Carlo standard deviations at the worst cell ({n_reruns} re-runs of the bootstrap"
+        " under other seeds; the deviation column carries this z, the tolerance is 3)."
+    ]
+    notes.append(
+        "excludes_zero agrees with the archive on every row."
+        if not flips
+        else f"excludes_zero DIFFERS from the archive on: {'; '.join(flips)}."
     )
+    record(name, STATISTICAL, _write(out, name, h4), max_z, MC_Z_TOLERANCE, notes, judged=not quick)
 
     # 7. task2_error_analysis_gdpval.csv
     name = "task2_error_analysis_gdpval.csv"
@@ -582,7 +633,8 @@ def reproduce_one_capability(
         0,
         [
             "The BIC_min row is regenerated from the archive: the BIC computation is not in the "
-            "archived notebook."
+            "archived notebook. The detail column is text written in the archive's format and is "
+            "not compared; only selected_k is."
         ],
     )
 
@@ -613,11 +665,11 @@ def reproduce_one_capability(
         rows.append(
             {
                 "k": kk,
-                "pooled_test_r2": round(float(e.test_r2.mean()), 4),
-                "pooled_test_rmse": round(float(np.sqrt(e.test_mse.mean())), 4),
-                "dMSE_vs_meanidx": round(d.point, 4),
-                "ci_lo": round(d.ci[0], 4),
-                "ci_hi": round(d.ci[1], 4),
+                "pooled_test_r2": float(e.test_r2.mean()),
+                "pooled_test_rmse": float(np.sqrt(e.test_mse.mean())),
+                "dMSE_vs_meanidx": d.point,
+                "ci_lo": d.ci[0],
+                "ci_hi": d.ci[1],
                 "excludes_zero": bool(d.ci[0] > 0 or d.ci[1] < 0),
                 "note": arch.set_index("k").loc[kk, "note"] if kk in arch.k.values else "",
             }
@@ -639,31 +691,39 @@ def reproduce_one_capability(
             ]
             for r in range(n_reruns)
         ]
-    ).reshape(n_reruns, -1)
-    aligned = arch.merge(ksweep, on=["k"], suffixes=("_archived", "_new")).sort_values("k")
+    )  # (n_reruns, 4, 2) in results_by_k order, i.e. ksweep row order
+    aligned = arch.merge(ksweep, on=["k"], suffixes=("_archived", "_new"))
+    if len(aligned) != len(arch) or len(aligned) != len(ksweep):
+        raise ValueError("k-sweep rows do not align with the archived table")
+    order = ksweep.set_index("k").index.get_indexer(aligned.set_index("k").index)
+    reruns = reruns[:, order, :].reshape(n_reruns, -1)
     max_z, _ = interval_agreement(
         aligned[["ci_lo_archived", "ci_hi_archived"]].to_numpy().ravel(),
         aligned[["ci_lo_new", "ci_hi_new"]].to_numpy().ravel(),
         reruns,
         rounding=0.00005,
     )
+    for c in ("pooled_test_r2", "pooled_test_rmse", "dMSE_vs_meanidx", "ci_lo", "ci_hi"):
+        ksweep[c] = ksweep[c].round(4)
     dev_pt, _ = compare(
         ksweep, arch, keys=["k"], numeric=["pooled_test_r2", "pooled_test_rmse", "dMSE_vs_meanidx"]
     )
     dev_ci, _ = compare(ksweep, arch, keys=["k"], numeric=["ci_lo", "ci_hi"])
+    flips = _flag_flips(ksweep, arch, ["k"])
+    if dev_pt > 1e-3 or flips:
+        max_z = float("inf")
+    notes = [
+        f"Point columns deviate at most {dev_pt:.3g} from the archive (rounded to 4 dp, tolerance"
+        f" 1e-3); interval endpoints at most {dev_ci:.3g}, {max_z:.2f} Monte-Carlo standard"
+        f" deviations at the worst cell ({n_reruns} re-runs; the deviation column carries this z,"
+        " the tolerance is 3). pooled_test_rmse is the root of the mean per-target MSE, as the"
+        " archived table has it. The note column is copied from the archive.",
+        "excludes_zero agrees with the archive on every row."
+        if not flips
+        else f"excludes_zero DIFFERS from the archive on k = {', '.join(flips)}.",
+    ]
     record(
-        name,
-        STATISTICAL,
-        _write(out, name, ksweep),
-        max_z,
-        MC_Z_TOLERANCE,
-        [
-            f"Point columns deviate at most {dev_pt:.3g} from the archive (rounded to 4 dp);"
-            f" interval endpoints at most {dev_ci:.3g}, {max_z:.2f} Monte-Carlo standard deviations"
-            f" at the worst cell ({n_reruns} re-runs; the deviation column carries this z, the"
-            " tolerance is 3). pooled_test_rmse is the root of the mean per-target MSE, as the"
-            " archived table has it.",
-        ],
+        name, STATISTICAL, _write(out, name, ksweep), max_z, MC_Z_TOLERANCE, notes, judged=not quick
     )
 
     # 10. efa_factor_correlations.csv (residualised solution)
