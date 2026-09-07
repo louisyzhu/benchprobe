@@ -17,6 +17,20 @@ without a ticket that says so.
 - Licence file deferred to v0.1, README says "all rights reserved until then" — coordinating session; handoff §3 lists licence and CITATION.cff as v0.1 items and the choice is Louis's.
 - Commits authored as `Louis Yiven Zhu <louisyzhu@users.noreply.github.com>` with the agent as co-author — coordinating session; the maintainer pushes and may reset the author before doing so.
 
+## 2026-09-06 — T1 golden tests
+
+- Golden tests import each SPEC function inside the test body, so an unimplemented function fails that test with a named reason instead of breaking collection — coordinating session; "all failing" must be visible per row, and the smoke test and `--collect-only` must keep working.
+- Provisional signatures for `io`, `measure` and `predict` written into SPEC.md §2 so the tests can call them; the implementing ticket may amend a signature and then changes the call, never the number — coordinating session; handoff §4 ("function signatures agreed per ticket").
+- Row "Three-factor loadings" encoded against the *residualised* (date-partialled) oblimin solution — coordinating session; the archive's `loadings_residualised.csv` and the paper's Table (tab:loadings) carry 1.01 / 0.84 / 0.54 / 0.50 and max cross-loading 0.38; the raw solution (`loadings_raw.csv`) has 1.05 / 0.87 / 0.57 / 0.71. The handoff row does not say which; the numbers decide.
+- Row "Residualised first-factor share": "deduplicated 24.1" and "compute-known 16.5" encoded as *drops in percentage points* on the `deduplicated` (n = 89) and `compute_known` (n = 58, date-only) grids — coordinating session; `dedup_r1_comparison.csv` (drop 24.1) and `subsample_date_compute.csv` (date_only drop 16.48) fix the meaning.
+- Economic factor identified as the factor carrying the largest sum of squared loadings across the four economic benchmarks, not assumed to be column 0 — coordinating session; a rotation may permute columns without changing any number, and the paper's own reading (F1 = agentic/work-realistic) is what the test checks.
+- Tolerances the handoff did not set, fixed at T1 and adjustable only by ticket: loadings 0.02; RMSE 0.005; a drop in share 1.0 pp (it is the difference of two shares each carrying 0.5 pp); bootstrap-interval endpoints 0.005 (ΔMSE) and 2.0 pp (share drop), the statistically-reproduced tier — coordinating session; reported precision is two or three decimals and the archive's own re-run check asserts at 5e-4, so these are loose by design and tighten only by ticket.
+- Ladder rows (best learner per rung) marked `slow`: they need the four-learner refit (most of the archive's 26-minute notebook run); ΔMSE rows need ridge only — coordinating session; keeps `pytest -m "golden and not slow"` usable in an evening.
+- `residualise_on_date` operates on the indicator matrix, then the factor solution is re-estimated — coordinating session; handoff §2 says "date-residualisation of a factor", the archived computation residualises the twelve indicators (notebook cell "Residualise on release date — H2"), and the code is what gets extracted. Wording in the handoff to be reconciled by the coordinating thread.
+- `compute_known` grid defined provisionally as `complete_case` rows with non-null `totalParameters` — coordinating session; that selection gives n = 58, the archived count, but the archived notebook does not derive the subsample; T3 confirms by reproducing 66.32 / 49.84 (raw / date-only share).
+- `measure.residualisation_drop_bootstrap` added to SPEC §2 as the H2(ii) bootstrap (model resampling, B = 2000, seed 42) so the [−5.3, +32.7] row has a callable — coordinating session; the archive computes it inline in the "Registration-honest robustness statistics" cell.
+- `economic_dense` grid is counted only; its `.benchmarks` are not asserted — coordinating session; the grid is incomplete on the other nine benchmarks by construction and no §6 row computes on it.
+
 ## Open, assigned
 
 - T2: source of the grids' base-model deduplication key (regex in the archive's R1 block) — extract verbatim.

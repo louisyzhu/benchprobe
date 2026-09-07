@@ -14,13 +14,30 @@ ledger: one row per output, kept current by the ticket that produces it.
 
 ## Outputs
 
-None computed yet (T0). The One Capability acceptance rows are listed with their tolerances in
-`tests/golden/test_one_capability.py` from T1; each moves into the table below, with its tier, when
-the ticket that computes it lands.
+None computed yet. The One Capability acceptance rows (handoff §6) are encoded in
+`tests/golden/test_one_capability.py` (T1) with the tolerances below; each row gets its tier and its
+recomputed value from the ticket that computes it. "Archive file" is where the value was verified on
+6 September 2026 (`frontier-ai-economic-validity`, commit `946ce845`).
 
-| Output | Study | Tier | Archive value | Recomputed value | Tolerance | Ticket |
-|---|---|---|---|---|---|---|
-| — | — | — | — | — | — | — |
+| Output | Grid | Archive value | Archive file | Tolerance | Tier | Recomputed | Ticket |
+|---|---|---|---|---|---|---|---|
+| KMO | complete_case (96) | 0.933 | task1_structure_results.json (0.9326) | 0.005 | not yet computed | — | T3 |
+| First-factor share of common variance | complete_case | 74.5 % | task1_structure_results.json (0.74544) | 0.5 pp | not yet computed | — | T3 |
+| Logistic-fit date-R² of the dominant factor | complete_case | 0.505 | hypothesis_adjudication.csv (OLS 0.477 in task1_structure_results.json) | 0.005 | not yet computed; functional form to recover (open item 2) | — | T3 |
+| Residualised first-factor share | complete_case | 59.6 % | task1_structure_results.json (0.59635) | 0.5 pp | not yet computed | — | T3 |
+| Residualisation drop | complete_case | 14.9 pp | task1_structure_results.json (14.909) | 1.0 pp | not yet computed | — | T3 |
+| Residualisation drop, bootstrap 95 % interval | complete_case | [−5.3, +32.7] pp | bootstrap_h2_drop.csv (−5.337, 32.731) | 2.0 pp per endpoint | not yet computed; statistically reproduced unless draw order matches | — | T3 |
+| Residualisation drop | deduplicated (89) | 24.1 pp | dedup_r1_comparison.csv | 1.0 pp | not yet computed | — | T3 |
+| Residualisation drop, date only | compute_known (58) | 16.5 pp | subsample_date_compute.csv (16.48) | 1.0 pp | not yet computed; subsample not derived in the archived notebook (open item 2) | — | T3 |
+| Residualised oblimin loadings, economic benchmarks on the economic factor | complete_case | 1.01 / 0.84 / 0.54 / 0.50 | loadings_residualised.csv; paper Table tab:loadings | 0.02 | not yet computed | — | T3 |
+| Largest economic cross-loading | complete_case | 0.38 | loadings_residualised.csv (0.3826) | 0.02 | not yet computed | — | T3 |
+| Pooled economic ΔMSE, mean index vs k-factor, ridge | complete_case | +0.037 | h4_bootstrap_dmse.csv; task2_prediction_results.json (0.037342) | 0.002 | not yet computed | — | T4 |
+| Its bootstrap 95 % interval | complete_case | [+0.019, +0.055] | h4_bootstrap_dmse.csv | 0.005 per endpoint | not yet computed; statistically reproduced unless draw order matches | — | T4 |
+| Pooled economic ΔMSE | deduplicated (89) | +0.038 | h4_bootstrap_dedup.csv (0.0378) | 0.002 | not yet computed | — | T4 |
+| Ladder, single index (ii), best learner | complete_case, economic block | RMSE 0.474, R² 0.771 | lobo_rung_summary.csv | 0.005 each | not yet computed (slow: four learners) | — | T4 |
+| Ladder, k-factor (iv), best learner | same | RMSE 0.433, R² 0.808 | lobo_rung_summary.csv | 0.005 each | not yet computed (slow) | — | T4 |
+| Ladder, first factor alone (iii), best learner | same | RMSE 0.950 | lobo_rung_summary.csv | 0.005 | not yet computed (slow; platform-sensitive per archive README) | — | T4 |
+| Grid sizes | complete_case, deduplicated, compute_known, economic_dense | 96, 89, 58, 103 | task1_structure_results.json, dedup_r1_comparison.csv, subsample_date_compute.csv, archive README | exact | not yet computed | — | T2 |
 
 ## Seeds and random streams recovered from the archives
 
