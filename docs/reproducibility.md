@@ -73,8 +73,43 @@ every value at the archive's three decimals).
 | Judge–gold correlation; leniency | 0.921; +0.46 elements | README | 0.0005; 0.005 | recomputed | 0.9206; +0.4611 | T5 |
 | Beta-binomial fit on judge totals | χ² 5.31, 6 df, p 0.504 | README | 0.005; exact; 0.0005 | recomputed (α 5.4521, β 3.6632) | χ² 5.3122, 6 df, p 0.5044 | T5 |
 | Simulated quantities (two-way grid, controls, G-study) | the archive's `sweeps.py` output | `tests/golden/judge_sweeps_reference.json` | 1e-9 | recomputed (seeds 11 / 101 / 303 / 7, draw order preserved) | identical (0.0) | T5 |
-| Published two-way KR-20 grid | `sweep_grid.json` | vendored | 0.5 SD per cell | statistically reproduced (different stream, README) | 0.315 SD worst cell | T5 |
-| Published 60-replicate run at 4.72 % error | `sweep_grid.json` | vendored | 0.5 SD per cell | statistically reproduced (seed unknown) | within tolerance | T5 |
+| Published two-way KR-20 grid | `sweep_grid.json` | vendored | 3 SE of the difference of two 60-replicate means | statistically reproduced (different stream, README) | 1.72 SE worst cell, 0.88 mean (re-expressed at T5.1; the 0.315 SD recorded before was the same gap on the wrong scale) | T5, T5.1 |
+| Published 60-replicate run at 4.72 % error | `sweep_grid.json` | vendored | 3 SE of the difference of two 60-replicate means | statistically reproduced (seed unknown) | within tolerance | T5, T5.1 |
+
+### Price of Intelligence — item-response fit (T6)
+
+Snapshot `price_of_intelligence_2026-08-09` (archive v1.0.0, DOI 10.5281/zenodo.22177190; all four
+vendored files hash-identical to the archive's own `MANIFEST.sha256`). **The archive ships no
+estimation code**, so `benchprobe.irt` is a re-implementation of the model the archive states it
+fitted — Samejima's continuous response model on logit scores, homoscedastic — validated against
+its published outputs. The *recomputed* tier below is claimed for these quantities and no others.
+Every row requires the scale repair (`docs/decisions.md`, 2026-09-10); without it none reproduces.
+Locked in `tests/golden/test_price_of_intelligence.py`; whole file runs in 4 s.
+
+| Output | Archive value | Archive file | Tolerance | Tier | Recomputed | Ticket |
+|---|---|---|---|---|---|---|
+| Scored cells / models / benchmarks | 4605 / 782 / 64 | theta_estimation.json | exact | recomputed | 4605 / 782 / 64 | T6 |
+| Cells squeezed off the boundary | 89 | theta_estimation.json | exact | recomputed | 89 | T6 |
+| Models with an anchor cell | 480 | theta_estimation.json | exact | recomputed | 480 | T6 |
+| Free parameters, stage 1 / stage 2 | 607 / 891 | theta_estimation.json | exact | recomputed | 607 / 891 | T6 |
+| Stage-1 objective (anchors only) | −1044.5802 | theta_estimation.json | 0.00005 | recomputed | −1044.58017655 | T6 |
+| Stage-1 residual scale | 0.30762771382713755 | theta_estimation.json | 1e-6 | recomputed | 0.30762771557809 | T6 |
+| Stage-2 objective (full panel) | −1328.6389 | theta_estimation.json | 0.00005 | recomputed (priors on held-fixed coordinates excluded; see decisions) | −1328.63888738 | T6 |
+| Stage-2 residual scale | 0.44927472556854087 | theta_estimation.json | 1e-6 | recomputed | 0.44927473150302 | T6 |
+| Item difficulty, all 64 benchmarks | item_parameters.csv | item_parameters.csv | 5e-4 | recomputed | worst 7.6e-5 | T6 |
+| Item discrimination, all 64 benchmarks | item_parameters.csv | item_parameters.csv | 5e-4 | recomputed | worst 1.3e-5 | T6 |
+| Ability θ, all 782 models | se_theta_structure.csv | se_theta_structure.csv | 1e-3 | recomputed | worst 3.3e-4 | T6 |
+| se(θ), all 782 models | se_theta_structure.csv | se_theta_structure.csv | 5e-4 | recomputed (cell information + ability prior) | worst 2.7e-5 | T6 |
+| Test information; se predicted from it | se_theta_structure.csv | se_theta_structure.csv | 5e-3; 5e-4 | recomputed (distinct-benchmark information — a different set from se(θ); finding, see decisions) | worst 8.7e-4; 2.9e-5 | T6 |
+| Mean discrimination per model | se_theta_structure.csv | se_theta_structure.csv | 5e-4 | recomputed (over distinct benchmarks) | worst 1.1e-5 | T6 |
+
+Not reproduced, and not claimed: the archive's recorded `initial_objective` and
+`after_adam_objective` for stage 2 (10777.8325 / −1328.2421). Its stage-2 *starting point* is not
+recorded, and benchprobe's differs; stage 1 matches on both (1875.7572 initial). These are
+optimiser-path diagnostics, not results, and the two stages land on the same optimum either way —
+recorded here so the gap is not mistaken for agreement. Also out of scope at T6:
+`information_curves.csv`, `dif_tests.csv`, `agreement_2pl.json`, `saturation*`, `kane_audit.json`
+and the sensitivity fits — none is vendored and none is claimed.
 
 ## Seeds and random streams recovered from the archives
 
@@ -118,6 +153,12 @@ statsmodels 0.14.6 on Python 3.13. Any golden difference attributable to this dr
 both values (rule 3) and decided at T3.
 
 ## Open items (report, do not guess)
+
+0. **The Price of Intelligence panel's `score_scale`/`score_divisor` metadata is wrong for four
+   benchmarks** (221 of 4605 scored cells), and the archive's `se_theta_structure.csv` reports a
+   `test_information` computed over a different set from the `se_theta` in the same row. Both are
+   evidenced, reproduced and locked at T6 (`docs/decisions.md`, 2026-09-10). Both need fixing at
+   source; neither changes a published number.
 
 1. **Are the 103-model economic-dense subset and the 96-model complete-case grid the same object?**
    Evidence at T0, computed from the vendored table: the 96 rows complete on all twelve benchmarks are a

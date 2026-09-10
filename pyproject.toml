@@ -14,10 +14,12 @@ dependencies = [
     "scipy>=1.18.0",
     "scikit-learn>=1.9.0",
     "factor_analyzer>=0.5.1",
+    "pyarrow>=17.0",  # the Price of Intelligence panel is frozen as Parquet (ticket T6)
 ]
 
 [project.optional-dependencies]
-# PyTorch is one optional dependency, for the IRT estimator only (benchprobe.irt, ticket T6).
+# Retained but unused: benchprobe.irt (T6) reproduces the archive's Adam-then-L-BFGS fit in
+# NumPy/SciPy with an analytic gradient, so torch is not needed. Kept for a future GPU path only.
 irt = ["torch>=2.4"]
 
 [dependency-groups]

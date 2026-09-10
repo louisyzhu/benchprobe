@@ -22,7 +22,7 @@ It is "in development" on every surface until the day it is the analysis code be
 | `benchprobe.trust` | Trust | KR-20, dependability index, Livingston–Lewis classification accuracy, Krippendorff's α, Cohen's κ, generalisability-theory variance components, human-vs-grader agreement with bootstrap intervals | `llm-judge-reliability` |
 | `benchprobe.measure` | Measure | KMO, Horn's parallel analysis, maximum-likelihood EFA with oblimin rotation, factor scores, Thurstone weights W = R⁻¹Λ, date-residualisation of a factor | `frontier-ai-economic-validity` |
 | `benchprobe.predict` | Predict | Leave-one-benchmark-out with factor re-estimation inside every fold, pooled ΔMSE with bootstrap intervals, general-index baseline, hold-out by task, model, family or context, effective-sample-size reporting | `frontier-ai-economic-validity`; thesis pipeline needs |
-| `benchprobe.irt` | Measure | Two-parameter and graded-response estimation, ability scores with standard errors; torch optional | Price of Intelligence archive |
+| `benchprobe.irt` | Measure | Samejima continuous response model on logit scores (homoscedastic), two-stage fixed-parameter anchor linking, item difficulty and discrimination, ability scores with standard errors | Price of Intelligence archive |
 | `benchprobe.io` | all | Hash-pinned snapshot loading, provenance record, coverage rules (models ≥ n, benchmarks ≥ k), config-driven runs | `frontier-ai-economic-validity` |
 | `benchprobe.report` | all | Tables and figures regenerated from run outputs; the archived-vs-recomputed boundary written into every table caption | both |
 
@@ -227,8 +227,26 @@ names kept. Verdict matrices are `(n_items, K)` 0/1 arrays; totals are `(n_items
 - `predict.LoboResult` gains `.oof_index` (T7): the grid row of each out-of-fold row, so tables
   keyed by model name can be rebuilt from the out-of-fold predictions.
 
-**`benchprobe.irt`** — signatures are agreed at T6, which needs the Price of Intelligence archive
-(Zenodo 10.5281/zenodo.22177190; not reachable from the T7 environment).
+**`benchprobe.irt`** (confirmed at T6) — `SCALE_REPAIR_BENCHMARKS`; `estimation_spec(snapshot=None,
+key="primary")`; `scale_repair_report(table) -> DataFrame` (per benchmark: `declared_scale`,
+`declared_divisor`, `max_score`, `share_already_divided`, `needs_repair`);
+`build_panel(snapshot=None, *, epsilon=None, repair_scale=True) -> Panel` with `.frame`, `.models`,
+`.items`, `.y`, `.n_cells`, `.M`, `.K`, `.n_squeezed`, `.repaired`, `.n_rows_repaired`,
+`.provenance`; `fit_crm(panel, *, free_models, free_items, cells=None, start=None, priors=None,
+adam_steps=3000, lr=0.05) -> CrmFit` with `.theta`, `.difficulty`, `.discrimination`,
+`.residual_sd`, `.objective`, `.max_abs_gradient`, `.n_free_parameters`, `.converged`,
+`.item_parameters()`; `two_stage_link(panel=None, spec=None) -> TwoStageFit` with `.stage1`,
+`.stage2`, `.item_parameters()`, `.summary()`; `ability_table(fit, *, theta_prior_sd=None) ->
+DataFrame`.
+
+The model is the archive's stated one — Samejima's continuous response model on logit scores,
+homoscedastic — not the two-parameter or graded-response models the T0 skeleton assumed; the scope
+row above was corrected at T6. The archive ships **no estimation code**, so this module is a
+re-implementation validated against its published outputs
+(`tests/golden/test_price_of_intelligence.py`), not an extraction, and `docs/reproducibility.md`
+records it at the *recomputed* tier for those quantities only. It needs no PyTorch: the recorded
+Adam-then-L-BFGS fit is reproduced in NumPy/SciPy with an analytic gradient, and the `irt` optional
+extra is retained unused.
 
 ## 3. Names used by the archive and kept here
 

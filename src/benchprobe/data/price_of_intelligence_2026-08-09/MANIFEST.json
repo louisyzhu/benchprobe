@@ -1,0 +1,47 @@
+{
+  "name": "price_of_intelligence_2026-08-09",
+  "description": "Frozen benchmark-score panel behind 'The Price of Intelligence' (Zhu, 2026) and the archived Phase-2 item-response outputs it reports: 5067 model x benchmark cells (4605 scored) over 782 models and 64 benchmarks, with the published Samejima continuous-response item parameters, per-model ability standard errors, and the estimation record.",
+  "table": "benchmark_scores.parquet",
+  "files": {
+    "benchmark_scores.parquet": {
+      "sha256": "8f92c5f43214f8eb11b9c0977ca30d26bb05ac2984c9a38fa571c48651a2c9a8",
+      "bytes": 56662,
+      "rows": 5067,
+      "columns": 13
+    },
+    "archived/item_parameters.csv": {
+      "sha256": "f77cd0b38a3c1bd6ff70e3de140a35526650afcc9bb45965cc5eaea25d17f3c5",
+      "bytes": 4646,
+      "rows": 64,
+      "columns": 6
+    },
+    "archived/se_theta_structure.csv": {
+      "sha256": "353ac7260be7fd14e3470621620e1f17b741a31f8d37bcc7f609d132e9644ea9",
+      "bytes": 107187,
+      "rows": 782,
+      "columns": 11
+    },
+    "archived/theta_estimation.json": {
+      "sha256": "d2b1165c8d1f81dcf0956ff8dd8453d14b75718351f8b003a9a65b15e2db6a4c",
+      "bytes": 9715
+    }
+  },
+  "source": {
+    "archive": "The Price of Intelligence, v1.0.0",
+    "doi": "10.5281/zenodo.22177190",
+    "panel_tag": "panel-freeze-v1.1",
+    "paths": [
+      "data/panel/benchmark_scores.parquet",
+      "results/phase2/item_parameters.csv",
+      "results/phase2/se_theta_structure.csv",
+      "results/phase2/theta_estimation.json"
+    ],
+    "hashes_match_archive_manifest": "MANIFEST.sha256 of the archive bundle, all four files"
+  },
+  "notes": [
+    "The archive ships no estimation code; benchprobe.irt is a re-implementation validated against these outputs (docs/reproducibility.md, tier: recomputed).",
+    "score_scale/score_divisor are inconsistent for four benchmarks; see benchprobe.irt.scale_repair_report and docs/decisions.md, 2026-09-10."
+  ],
+  "vendored_on": "2026-09-10",
+  "vendored_under_ticket": "T6"
+}

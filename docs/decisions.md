@@ -133,10 +133,94 @@ labelling it `judge_error: 0.0472`. The range reported there is the range at 5 %
 measured 4.72 % rate. The separate `measured_error_run` block in `sweep_grid.json` *is* at 0.0472
 and is unaffected. If the paper quotes that field, the sentence needs checking.
 
+# T6 — the Price of Intelligence item-response estimator (2026-09-10)
+
+The archive arrived by upload (the proxy still refuses zenodo.org). Four decisions.
+
+**1. The model is not the one the skeleton assumed.** `SPEC.md` said "two-parameter and
+graded-response estimation". The archive's own estimation record says *Samejima continuous
+response model on logit scores, homoscedastic*, and its parameter counts (607 free at stage 1,
+891 at stage 2) confirm it. The scope row and the signatures section were corrected. This moves
+no number; it corrects a description that was wrong from T0.
+
+**2. This module is a re-implementation, not an extraction.** The archive ships its frozen panel
+and its Phase-2 outputs and **no estimation code**. Every other benchprobe module was extracted
+from code that produced the published numbers; this one was written from the archive's stated
+model, optimiser (Adam 3000 steps at lr 0.05, then L-BFGS) and penalty scales, and then held
+against its published outputs. `docs/reproducibility.md` records it at the *recomputed* tier for
+the quantities `tests/golden/test_price_of_intelligence.py` locks, and for nothing else. The
+recorded `seed` does not enter: Adam starts from zeros and nothing here is stochastic.
+
+**3. The scale repair — a correction to the panel's metadata, carried in the open.** Four
+benchmarks (`aider_polyglot_external`, `forecastbench_external`, `live_bench_external`,
+`os_world_external`; 221 of 4605 scored cells) carry `score_scale="percentage"` and
+`score_divisor=100` over scores that are already proportions. The evidence, recomputed by
+`irt.scale_repair_report` on every run rather than asserted: all 221 stored values are
+**bit-for-bit** equal to `round(score*100, 2)/100`, the floating-point residue of a percentage
+divided by 100 (`0.036000000000000004`, `0.08900000000000001`); across the other 4384 scored
+cells, which store native ratios of counts, only 59.8 % are. These four are the only rows in the
+panel declared `percentage`; scale is constant per benchmark for all 64.
+
+Applying the recorded divisor a second time reproduces neither the published item parameters
+(worst |Δ discrimination| 1.11, worst |Δ difficulty| 24.6, 55 of 64 benchmarks within 0.05 on
+both) nor the residual scale (0.444766 against the published 0.44927472556854087). Not applying
+it reproduces both (worst |Δ difficulty| 7.6e-5, |Δ discrimination| 1.3e-5, residual scale to
+5.9e-9). So the *published* numbers were computed on the corrected reading; it is the shipped
+metadata, not the paper, that is wrong, and anyone re-running from the panel as documented would
+diverge silently. `build_panel(repair_scale=True)` is therefore the default, the repaired
+benchmarks are named rather than detected (the set cannot silently grow), a named benchmark whose
+evidence no longer supports the repair raises instead of being repaired, and
+`test_the_unrepaired_panel_does_not_reproduce_the_archive` fits the literal metadata and asserts
+that it *fails*, so the correction can never be quietly dropped and mistaken for agreement.
+Rule 3 holds: this moves no published number — it is what makes the published numbers reproduce.
+
+Provenance of the 221 rows, from the panel itself: they come from `aider.chat` (62),
+`livebench.ai` (54) and `os-world.github.io` (20) — hosts that appear nowhere else in the panel —
+plus 85 forecastbench rows from `epoch.ai`; all 221 are `item_level_readable = False`. Two
+tempting explanations were checked and **do not hold**: `archive_timestamp` is `20260809T212305Z`
+for all 5067 rows and so distinguishes nothing, and a percentage-sounding column header does not
+predict the label (`Average (%)`, `Overall pass (%)`, `Win Rate (%)` and 36 rows reading
+`Overall score` are all labelled `proportion`). Without the ingestion code the entry point can be
+located and the double division proved; the intent cannot be read.
+
+**4. Two arithmetic findings about the archive's own outputs, reproduced rather than reconciled.**
+
+- *The objective excludes priors on fixed parameters.* Including them left benchprobe's stage-2
+  objective exactly 1.8839 above the archive's — the Gaussian penalty carried by the nine fixed
+  non-reference anchors, computed from the archive's own item parameters. A penalty on a
+  held-fixed coordinate is an additive constant: it cannot move the optimum, and counting it makes
+  the reported objective depend on which parameters happen to be fixed. Excluded, and stage 2 lands
+  on −1328.6389 (recomputed −1328.63888738). Stage 1 is unaffected, because there only the
+  reference item is fixed and its parameters are zero.
+- *`se_theta_structure.csv` reports two different informations in the same row.* Its
+  `test_information` and `se_predicted_from_information` sum `a_k²/σ²` over a model's **distinct
+  benchmarks**; its `se_theta` sums over the model's **cells** and adds the ability prior's
+  precision. 148 of 782 models are scored more than once on some benchmark, so for those
+  `se_predicted_from_information` is not the likelihood-only counterpart of `se_theta` its name
+  implies (worst gap 0.185). Both were reconstructed from the archive's own item parameters and
+  residual scale, to 4e-16 and 1.7e-13, so this is a definitional split in the archive, not
+  estimation noise. `ability_table` reproduces both and labels which set each column used; the
+  finding is locked by `test_the_archives_two_informations_really_do_differ`. For the coordinating
+  thread: if any paper quotes `se_predicted_from_information` as the standard error before the
+  prior, the sentence needs checking.
+
+**Dependency.** `pyarrow>=17.0` added: the archive freezes its panel as Parquet and that is the
+file its own `MANIFEST.sha256` hashes, so vendoring a CSV conversion would break the provenance
+chain. `io.load_snapshot` now reads a `.parquet` table as well as a `.csv`. The optional `irt`
+extra (`torch`) is retained but unused — the recorded fit reproduces in NumPy/SciPy with an
+analytic gradient — and the pyproject comment now says so instead of claiming torch is needed.
+
+**Tolerances.** Nothing here can be bit-for-bit; a different optimiser implementation never is.
+They are declared from the precision at which each quantity is reported and used — objectives at
+half a unit of the last printed digit, residual scale 1e-6, item parameters and standard errors
+5e-4, abilities 1e-3, information 5e-3 — and the observed worst deviations are recorded in the
+test's docstring so drift is visible. They were set before the first golden run, not after.
+
 ## Open, assigned
 
 - Louis: confirm the recovered four-parameter logistic (T3) against the pre-registration text.
-- T6: the Price of Intelligence archive (Zenodo 10.5281/zenodo.22177190, one 4.2 MB zip) could not be downloaded from the session environment (the proxy refuses zenodo.org) and no GitHub mirror was found; T6 starts when Louis attaches the archive.
+- Coordinating thread: the panel's `score_scale`/`score_divisor` metadata for the four benchmarks
+  above should be corrected at source, and `se_predicted_from_information` renamed or recomputed.
 - T8 remains open: the 10 September review was by Claude Code, a Claude model. The house rule is a different family (`docs/qa/T8_cross_family_brief.md`).
 - Ticket, unscheduled: hash `MANIFEST.json` itself, so a snapshot cannot be relabelled without failing.
 - v0.1: licence choice; CITATION.cff; commit author identity.

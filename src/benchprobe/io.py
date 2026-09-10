@@ -188,6 +188,24 @@ def sha256_of(path: str | os.PathLike) -> str:
     return h.hexdigest()
 
 
+def _read_table(path: Path) -> pd.DataFrame:
+    """Read a snapshot's primary table in whatever format the archive froze it in.
+
+    CSV for the One Capability and JUDGe snapshots; Parquet for the Price of Intelligence panel,
+    which is the format its ``MANIFEST.sha256`` hashes (T6). The file is read as stored; no dtype
+    coercion, no column renaming.
+    """
+    suffix = path.suffix.lower()
+    if suffix == ".parquet":
+        return pd.read_parquet(path)
+    if suffix == ".csv":
+        return pd.read_csv(path)
+    raise SnapshotIntegrityError(
+        f"{path.name}: snapshot tables are .csv or .parquet, not "
+        f"{suffix or 'an extension-less file'}"
+    )
+
+
 def _vendored_root() -> Path:
     return Path(str(files("benchprobe").joinpath("data")))
 
@@ -248,7 +266,7 @@ def load_snapshot(
                 f"{expected['bytes']}"
             )
         digests[filename] = digest
-    table = pd.read_csv(folder / table_file)
+    table = _read_table(folder / table_file)
     if DATE_COLUMN in table.columns:
         table[DATE_COLUMN] = pd.to_datetime(table[DATE_COLUMN], errors="coerce")
     return Snapshot(

@@ -1,0 +1,263 @@
+{
+  "source": {
+    "panel": "data/panel/benchmark_scores.parquet",
+    "tag": "panel-freeze-v1.1",
+    "input_hashes": {
+      "data/panel/benchmark_scores.parquet": {
+        "sha256": "8f92c5f43214f8eb11b9c0977ca30d26bb05ac2984c9a38fa571c48651a2c9a8",
+        "size_bytes": 56662,
+        "tracked": true,
+        "in_head": true,
+        "blob": "fa3d9899035d3817b6396c16ea66718197650799",
+        "committed_sha256": "8f92c5f43214f8eb11b9c0977ca30d26bb05ac2984c9a38fa571c48651a2c9a8",
+        "working_tree_matches_head": true
+      }
+    }
+  },
+  "model": "Samejima continuous response model on logit scores, homoscedastic",
+  "primary": {
+    "label": "ratified_ten",
+    "anchors": [
+      "arc_ai2_external",
+      "gpqa_diamond",
+      "gsm8k_external",
+      "hella_swag_external",
+      "math_level_5",
+      "metr_time_horizons_external",
+      "mmlu_external",
+      "otis_mock_aime_2024_2025",
+      "weirdml_external",
+      "wino_grande_external"
+    ],
+    "n_anchors": 10,
+    "reference_item": "gpqa_diamond",
+    "n_models": 782,
+    "n_models_with_anchor_cell": 480,
+    "n_benchmarks": 64,
+    "n_cells": 4605,
+    "n_cells_squeezed_from_boundary": 89,
+    "L_plausible_values": 20,
+    "seed": 20261103,
+    "plausible_value_seed": 8102026,
+    "epsilon_squeeze": 0.001,
+    "penalty_scales": {
+      "theta_prior_sd": 5.0,
+      "difficulty_prior_sd": 5.0,
+      "log_discrimination_prior_sd": 1.5
+    },
+    "stage1_anchors_only": {
+      "optimiser": "Adam(3000 steps, lr=0.05) then L-BFGS",
+      "n_lbfgs_closure_evaluations": 294,
+      "initial_objective": 1875.7572,
+      "after_adam_objective": -1044.5622,
+      "final_objective": -1044.5802,
+      "max_abs_gradient": 4.424135495717518e-05,
+      "n_free_parameters": 607,
+      "hessian_min_eigenvalue": 0.039999999999931,
+      "hessian_max_eigenvalue": 19746.991769118642,
+      "hessian_n_negative_eigenvalues": 0,
+      "hessian_condition_number": 493674.7942288176,
+      "is_local_minimum": true,
+      "newton_decrement": 1.865382252267637e-09,
+      "predicted_objective_improvement": 9.326911261338185e-10,
+      "max_remaining_theta_step": 1.9734530273299084e-05,
+      "residual_sd": 0.30762771382713755,
+      "converged": true,
+      "convergence_criterion": "all Hessian eigenvalues positive on the free block AND |Newton decrement| < 0.001 AND largest remaining theta step < 0.001"
+    },
+    "stage2_full_panel": {
+      "optimiser": "Adam(3000 steps, lr=0.05) then L-BFGS",
+      "n_lbfgs_closure_evaluations": 600,
+      "initial_objective": 10777.8325,
+      "after_adam_objective": -1328.2421,
+      "final_objective": -1328.6389,
+      "max_abs_gradient": 5.486796555786988e-05,
+      "n_free_parameters": 891,
+      "hessian_min_eigenvalue": 0.08614290139459405,
+      "hessian_max_eigenvalue": 18740.29143449455,
+      "hessian_n_negative_eigenvalues": 0,
+      "hessian_condition_number": 217548.87670489596,
+      "is_local_minimum": true,
+      "newton_decrement": 4.787302219616923e-08,
+      "predicted_objective_improvement": 2.3936511098084616e-08,
+      "max_remaining_theta_step": 0.00034798423554912737,
+      "residual_sd": 0.44927472556854087,
+      "converged": true,
+      "convergence_criterion": "all Hessian eigenvalues positive on the free block AND |Newton decrement| < 0.001 AND largest remaining theta step < 0.001"
+    },
+    "theta_se": {
+      "n_estimable": 782,
+      "n_not_estimable": 0,
+      "median": 0.1354,
+      "min": 0.0326,
+      "max": 3.3368
+    }
+  },
+  "sensitivity_threshold_20": {
+    "label": "threshold_20_survivors",
+    "anchors": [
+      "gpqa_diamond",
+      "math_level_5",
+      "mmlu_external",
+      "otis_mock_aime_2024_2025"
+    ],
+    "n_anchors": 4,
+    "reference_item": "gpqa_diamond",
+    "n_models": 782,
+    "n_models_with_anchor_cell": 356,
+    "n_benchmarks": 64,
+    "n_cells": 4605,
+    "n_cells_squeezed_from_boundary": 89,
+    "L_plausible_values": 20,
+    "seed": 20261103,
+    "plausible_value_seed": 8102026,
+    "epsilon_squeeze": 0.001,
+    "penalty_scales": {
+      "theta_prior_sd": 5.0,
+      "difficulty_prior_sd": 5.0,
+      "log_discrimination_prior_sd": 1.5
+    },
+    "stage1_anchors_only": {
+      "optimiser": "Adam(3000 steps, lr=0.05) then L-BFGS",
+      "n_lbfgs_closure_evaluations": 126,
+      "initial_objective": 1272.2273,
+      "after_adam_objective": -794.1323,
+      "final_objective": -794.1378,
+      "max_abs_gradient": 5.320231865565961e-05,
+      "n_free_parameters": 483,
+      "hessian_min_eigenvalue": 0.03999999999990334,
+      "hessian_max_eigenvalue": 37383.0287712264,
+      "hessian_n_negative_eigenvalues": 0,
+      "hessian_condition_number": 934575.7192829185,
+      "is_local_minimum": true,
+      "newton_decrement": 7.328953594706426e-10,
+      "predicted_objective_improvement": 3.664476797353213e-10,
+      "max_remaining_theta_step": 2.841840537116783e-06,
+      "residual_sd": 0.22272202335045146,
+      "converged": true,
+      "convergence_criterion": "all Hessian eigenvalues positive on the free block AND |Newton decrement| < 0.001 AND largest remaining theta step < 0.001"
+    },
+    "stage2_full_panel": {
+      "optimiser": "Adam(3000 steps, lr=0.05) then L-BFGS",
+      "n_lbfgs_closure_evaluations": 574,
+      "initial_objective": 9135.2274,
+      "after_adam_objective": -1325.6122,
+      "final_objective": -1325.8042,
+      "max_abs_gradient": 4.4716005175839124e-05,
+      "n_free_parameters": 903,
+      "hessian_min_eigenvalue": 0.08579471445660673,
+      "hessian_max_eigenvalue": 18746.425776743446,
+      "hessian_n_negative_eigenvalues": 0,
+      "hessian_condition_number": 218503.27139004602,
+      "is_local_minimum": true,
+      "newton_decrement": 2.95165797824664e-08,
+      "predicted_objective_improvement": 1.47582898912332e-08,
+      "max_remaining_theta_step": 0.00011265328077462193,
+      "residual_sd": 0.4490862985908357,
+      "converged": true,
+      "convergence_criterion": "all Hessian eigenvalues positive on the free block AND |Newton decrement| < 0.001 AND largest remaining theta step < 0.001"
+    },
+    "theta_se": {
+      "n_estimable": 782,
+      "n_not_estimable": 0,
+      "median": 0.1366,
+      "min": 0.0326,
+      "max": 3.3437
+    }
+  },
+  "sensitivity_theta_movement": {
+    "n_models_compared": 782,
+    "pearson": 0.9994,
+    "spearman": 0.9999,
+    "mean_abs_theta_shift_standardised": 0.0251,
+    "max_abs_theta_shift_standardised": 0.2056,
+    "n_models_shifting_over_half_sd": 0,
+    "note": "Correlations are on the raw fitted scales; shifts are on standardised scales, since the two equatings fix different units."
+  },
+  "epsilon_sensitivity": {
+    "epsilon_primary": 0.001,
+    "epsilon_halved": 0.0005,
+    "n_models_compared": 782,
+    "n_cells_at_boundary": 89,
+    "max_abs_theta_change": 0.290034,
+    "median_abs_theta_change": 0.019649,
+    "spearman": 0.999794,
+    "reported_precision": 0.001,
+    "max_change_below_reported_precision": false,
+    "theta_is_not_a_reported_quantity": "theta moves under a halved squeeze, so the appendix claim cannot be settled here: it is about reported quantities, and those are index rates. The downstream test is indices.json per_token.epsilon_halved_headline, which re-runs the headline on this fit."
+  },
+  "degeneracy_diagnostics": {
+    "n_benchmarks": 64,
+    "n_benchmarks_with_tied_scores": 55,
+    "beta_degeneracy_share_of_benchmarks": 0.8594,
+    "share_of_cells_on_a_tied_value": 0.4007,
+    "min_cells_per_benchmark": 5,
+    "thinnest_benchmark": "mindcube_external",
+    "definition": "A benchmark is on a coarse grid when at least one of its score values is shared by two or more models. Shares are over the benchmarks the estimation loads, which is every benchmark carrying a non-null score."
+  },
+  "external_validity_release_date": {
+    "status": "computed",
+    "criterion": "model release date, which is not a benchmark score",
+    "n_dated_models": 757,
+    "spearman_theta_vs_release_date": 0.8799,
+    "median_theta_by_year": [
+      {
+        "year": 2019,
+        "median_theta": -3.4051,
+        "n_models": 1
+      },
+      {
+        "year": 2020,
+        "median_theta": -3.645,
+        "n_models": 1
+      },
+      {
+        "year": 2021,
+        "median_theta": -2.0002,
+        "n_models": 3
+      },
+      {
+        "year": 2022,
+        "median_theta": -1.8413,
+        "n_models": 14
+      },
+      {
+        "year": 2023,
+        "median_theta": -1.6013,
+        "n_models": 84
+      },
+      {
+        "year": 2024,
+        "median_theta": -0.5538,
+        "n_models": 166
+      },
+      {
+        "year": 2025,
+        "median_theta": 1.0639,
+        "n_models": 265
+      },
+      {
+        "year": 2026,
+        "median_theta": 1.9057,
+        "n_models": 223
+      }
+    ],
+    "rises_every_year_from": 2020,
+    "monotone_across_years_with_multiple_models": true,
+    "years_resting_on_one_model": [
+      2019,
+      2020
+    ],
+    "reading": "Consistency evidence, and a weak test: almost any competently built capability measure would rise with release date. It is reported because failing it would be disqualifying, not because passing it is informative."
+  },
+  "outputs": {
+    "theta": "data/interim/theta.parquet",
+    "theta_draws": "data/interim/theta_draws.parquet",
+    "theta_sensitivity": "data/interim/theta_sensitivity.parquet",
+    "theta_draws_sensitivity": "data/interim/theta_draws_sensitivity.parquet",
+    "theta_epsilon_halved": "data/interim/theta_epsilon_halved.parquet",
+    "theta_draws_epsilon_halved": "data/interim/theta_draws_epsilon_halved.parquet",
+    "item_parameters": "results/phase2/item_parameters.csv",
+    "item_parameters_sensitivity": "results/phase2/item_parameters_sensitivity.csv"
+  }
+}
