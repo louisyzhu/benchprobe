@@ -7,7 +7,7 @@ serving all three. Scope is fixed by ``SPEC.md``; the locked acceptance numbers 
 ``tests/golden``. Extracted from archived code where the archive ships it; reconstructed, and
 labelled as such, where it does not (``docs/decisions.md``).
 
-In development. Nothing here ships before the day it is the analysis code behind a real study.
+v0.1: validated against three published studies; the door for other data is ``benchprobe.scores``.
 """
 
 from importlib.metadata import PackageNotFoundError, version

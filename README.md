@@ -1,95 +1,112 @@
 # benchprobe
 
-**In development.** benchprobe is the analysis layer behind Louis Zhu's evaluation papers, packaged
-so the same computation runs by one command on a fresh machine. Where an archive ships the code that
-produced its published numbers, benchprobe is an extraction of it; where it does not, benchprobe is a
-reconstruction validated against the published outputs, and every such place is named
-(`docs/decisions.md`): the logistic date-R² form and the ladder pooling rule of One Capability, the
-`compute_known` grid, and the whole of `benchprobe.irt`, whose archive ships no estimation code. Three families of function, one per programme layer: **trust**
-(reliability and grader agreement), **measure** (factor structure and incremental validity, with an
-IRT estimator underneath), **predict** (held-out designs and uncertainty for criterion studies).
-`SPEC.md` fixes the scope. It is a Python package; PyTorch is one optional dependency, for the IRT
-estimator only.
+**A Python psychometrics library for AI benchmark scores.** Give it a model × benchmark matrix and
+it answers four questions the evaluation literature keeps asking by hand:
 
-It is not a general-purpose benchmark-auditing tool, it has no public release date, and it carries no
-claim the papers do not carry. It ships (v0.1) on the day it is the analysis code behind a real study,
-with that study's tiered reproducibility statement; until then nothing here is tagged or published.
-
-## Install and run
-
-Requires [uv](https://docs.astral.sh/uv/) and Python ≥ 3.12 (uv fetches 3.13 from `.python-version`
-if it is not installed). From a fresh clone:
-
-```sh
-uv sync                     # locked environment, dev tools included
-uv run pytest -m smoke      # the smoke test: seconds
-```
-
-Other commands:
-
-```sh
-uv run pytest -m golden                  # acceptance tests against the locked numbers (see below)
-uv run pytest -m "golden and not slow"   # the same without the full four-learner ladder refit
-uv run ruff check .                      # lint
-uv sync --extra irt                      # add PyTorch, for benchprobe.irt
-```
-
-One command reproduces the twelve result tables of *One Capability or Many?* that the archive
-notebook reads rather than derives, each with a caption stating whether it is recomputed,
-statistically reproduced or regenerated, and its deviation from the archived copy:
-
-```sh
-uv run python -m benchprobe.report one-capability --out runs/one_capability   # 25–50 s
-uv run python -m benchprobe.report one-capability --out runs/one_capability --full-ladder  # + ~35 min
-```
-
-`--config file.json` overrides the defaults in `report.default_config()` (seeds, bootstrap size, k).
-
-## Configuration
-
-Everything is configured by environment variable; nothing in the repository refers to a local path.
-
-| Variable | Meaning | Default |
+| Layer | Question | Functions |
 |---|---|---|
-| `BENCHPROBE_DATA_DIR` | Directory holding snapshot folders (`<name>/MANIFEST.json` plus the files it lists) to load instead of the copies vendored under `benchprobe/data/` | unset: vendored copies |
+| `trust` | Are these scores reliable, and does the grader agree with gold? | KR-20/KR-21, beta-binomial fit, Livingston–Lewis classification accuracy, Φ(λ), Krippendorff's α, Cohen's κ, two-way G-study |
+| `measure` | Do the benchmarks measure one thing or several — and does that survive controlling for release date? | KMO, Horn's parallel analysis, ML factor analysis with oblimin rotation, Thurstone factor scores, date residualisation and date-R² |
+| `predict` | Does the battery predict a held-out criterion better than a single index? | Leave-one-benchmark-out with in-fold factor re-estimation, a rung ladder from date-only to k-factor + covariates, pooled ΔMSE with bootstrap intervals |
+| `irt` | Where does each model sit on a common scale, with a standard error, and which benchmarks discriminate? | Samejima continuous response model on logit scores, two-stage fixed-parameter anchor linking, Hessian-based convergence diagnostics |
 
-## Tests and the acceptance numbers
+What makes it different from writing these yourself: **every estimator is validated by reproducing
+the published numbers of three studies from hash-pinned data** — 44 acceptance tests, tolerances
+declared before the code was written and never loosened, a reproducibility ledger stating for each
+number whether it is *recomputed*, *statistically reproduced* or *regenerated*, and a review by a
+model from a different family on record. The studies are the library's validation suite, not its
+purpose; your data is.
 
-- `tests/smoke/` — imports every module, checks the vendored snapshots against their manifests, and
-  checks the repository rules are in place. CI runs this test set (with the lint, the lockfile check
-  and a collection-only pass over the golden tests), never the golden tests themselves.
-- `tests/golden/` — the locked numbers of the studies benchprobe reproduces, each with its
-  tolerance. `test_one_capability.py` encodes the One Capability results on the 6 July 2026 snapshot
-  (KMO 0.933, first-factor share 74.5 %, pooled LOBO ΔMSE +0.037, and the rest); `test_judge.py` the
-  JUDGe real-bank quantities and simulations. These tests are the
-  ship condition: they were written before the code and are never edited to pass. A failing golden
-  test is a finding and is reported as such. As of T7 all thirty pass (`docs/reproducibility.md`
-  states each row's tier and recomputed value); the three `slow` rows refit four learners and take
-  about ten minutes.
-- `tests/io/`, `tests/measure/`, `tests/predict/`, `tests/trust/`, `tests/report/` — unit tests on
-  synthetic data and the vendored snapshots, in the smoke set. `tests/golden/test_one_capability_tables.py`
-  runs the twelve-table reproduction and requires every table within its tolerance.
+NumPy, SciPy, pandas, scikit-learn, factor_analyzer. No GPU, no service, no UI. Python ≥ 3.12.
 
-`docs/reproducibility.md` states, for every output, whether it is *recomputed*, *statistically
-reproduced* or *regenerated*, with tolerances, seeds, expected runtime and cost. `docs/decisions.md`
-is one dated line per design decision.
+## Install
+
+```sh
+pip install benchprobe            # from PyPI, once v0.1 is tagged
+pip install git+https://github.com/louisyzhu/benchprobe   # or from the repository
+```
+
+For development: `uv sync && uv run pytest -m smoke` (locked environment; the smoke set runs in
+about 30 s).
+
+## Ten lines on your own data
+
+```python
+import pandas as pd
+import benchprobe.irt as irt
+import benchprobe.measure as measure
+import benchprobe.predict as predict
+from benchprobe.scores import ScoreMatrix
+
+long = pd.read_csv("scores.csv")  # columns: model, item, score (0–1), release_date
+sm = ScoreMatrix.from_long(long, release_date="release_date")
+
+z = sm.complete()  # rows scored on every benchmark
+z = (z - z.mean()) / z.std(ddof=0)
+print(measure.kmo(z), measure.parallel_analysis(z).k_retained)
+print(measure.first_factor_share(z, k=3))  # share of common variance on the first of k factors
+print(measure.date_r2(measure.efa(z, k=1).scores, sm.grid().days, form="logistic"))
+
+res = predict.lobo(sm.grid(), targets=["your_criterion"], k=3, learners=["ridge"])
+print(res.metrics[["target", "rung", "learner", "test_rmse", "test_r2"]])
+
+fit = irt.fit_single_stage(irt.panel_from_long(sm.long()))
+print(
+    irt.ability_table(fit, panel=irt.panel_from_long(sm.long()))[["model_id", "theta", "se_theta"]]
+)
+```
+
+`examples/quickstart.py` is that script on simulated data, end to end, in about a second:
+`uv run python examples/quickstart.py`.
+
+Conventions: scores are proportions in [0, 1] (`scale="percent"` divides by 100); a missing cell is
+`NaN` wide and an absent row long; a repeated (model, item) cell is an error unless you say what it
+means (`aggregate="mean"`). `ScoreMatrix` does bookkeeping only — every number comes from the four
+layers.
+
+## The three studies it reproduces
+
+`benchprobe.studies` holds one function per study; nothing outside that package knows a benchmark
+by name.
+
+| Study | Entry point | What reproduces | How well |
+|---|---|---|---|
+| *One Capability or Many?* (arXiv:2608.29420) | `studies.one_capability(out_dir)` — or `python -m benchprobe.report one-capability --out DIR` | the twelve archived result tables, each with a reproducibility tier in its caption; KMO 0.933, first-factor share 74.5 %, logistic date-R² 0.505, pooled LOBO ΔMSE +0.037 [+0.019, +0.055], the four-learner ladder | recomputed to the archive's printed precision; two bootstrap tables statistically reproduced (their random stream is unrecorded); `lobo_rung_summary.csv` byte-identical with `--full-ladder` |
+| *Three Ways Classical Test Theory Misleads for LLM Judges* | `studies.judge()` | KR-20 0.5223/0.5231, per-element error 4.72 %, judge–gold r 0.921, beta-binomial χ² 5.31 (p 0.504); the simulation sweeps | real bank exact; sweeps reproduce the archive's script to 1e-9; the published grid within 1.72 standard errors |
+| *The Price of Intelligence* (Zenodo 10.5281/zenodo.22177190) | `studies.price_of_intelligence()` | 64 item parameters, 782 abilities with standard errors, both stage objectives and residual scales, the Hessian convergence diagnostics | item parameters to 8e-5, abilities to 3e-4 (the archive's own stopping distance), objectives to 1e-5; the archive's recorded gradient and Newton decrement reproduced *at its published point* |
+
+`docs/reproducibility.md` is the ledger: one row per number, with archive value, recomputed value,
+tolerance and tier. `docs/decisions.md` records every design decision and every finding about the
+archives — including the ones that are corrections to the archives themselves. Full acceptance run:
+`uv run pytest -m golden` (46 min; the One Capability ladder is most of it).
+
+## What it is not
+
+Not a leaderboard, a scraper, a model runner, a dashboard or an "audit in an afternoon". It
+computes statistics on tables you already have, and it carries no claim its validation studies do
+not carry. If you need a general benchmark-auditing product, see tinyBenchmarks, MetaBench or
+PSN-IRT; if you need the specific estimators those papers use, validated against their numbers,
+this is it.
+
+## Rules the repository runs by
+
+`CLAUDE.md` — ten rules, checked by a smoke test. The ones a user should know: a golden number,
+tolerance or seed is never changed to make a test pass (a failing golden test is a finding and is
+reported); every reported number has a test; every output states its reproducibility tier; the
+environment is pinned; nothing is published by an agent.
 
 ## Data
 
-`benchprobe/data/one_capability_2026-07-06/` vendors the analysis-ready table of
-[frontier-ai-economic-validity](https://github.com/louisyzhu/frontier-ai-economic-validity) (CC BY 4.0;
-figures originate with Artificial Analysis and Epoch AI, see the folder's README), and
-`benchprobe/data/judge_2026-08-31/` the item bank and published simulation grid of
-[llm-judge-reliability](https://github.com/louisyzhu/llm-judge-reliability) (CC BY 4.0). Each folder
-carries a manifest recording its files' SHA-256, which `benchprobe.io.load_snapshot` verifies on every
-load (and the smoke test checks independently). Raw snapshots are not vendored. The package analyses tables; it
-performs no inference and needs no credentials.
+Three snapshots are vendored under `benchprobe/data/`, each with a `MANIFEST.json` whose entries
+`load_snapshot` verifies on every load and whose own hash the golden tests pin: the One Capability
+analysis table ([frontier-ai-economic-validity](https://github.com/louisyzhu/frontier-ai-economic-validity),
+CC BY 4.0; figures originate with Artificial Analysis and Epoch AI), the JUDGe item bank
+([llm-judge-reliability](https://github.com/louisyzhu/llm-judge-reliability), CC BY 4.0), and the
+Price of Intelligence panel with three Phase-2 output files (Zenodo, hash-identical to the archive's
+own manifest). `BENCHPROBE_DATA_DIR` points at alternative snapshot folders. Nothing here performs
+inference or needs credentials.
 
-## Licence
+## Licence and citation
 
-To be set by the author at v0.1. Until then, all rights reserved; the vendored data keeps its own
-CC BY 4.0 terms.
-
-## Citation
-
-Cite the study the code ships with, by version, once v0.1 exists. `CITATION.cff` is added at v0.1.
+MIT for the code; the vendored data keeps its CC BY 4.0 terms. Cite the release
+(`CITATION.cff`) and the study whose numbers you rely on.

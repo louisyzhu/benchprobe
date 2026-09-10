@@ -16,7 +16,10 @@ agreement), **measure** (factor structure and incremental validity), **predict**
 uncertainty for criterion studies). An IRT estimator sits under measure.
 
 It is not a general-purpose benchmark-auditing product. It carries no claim the papers do not carry.
-It is "in development" on every surface until the day it is the analysis code behind a real study.
+The ship condition — the day it is the analysis code behind a real study — was met by the
+recomputation of One Capability's twelve tables (T7) and the cross-family review (T8); v0.1 adds the
+door for other people's data (`benchprobe.scores`, `benchprobe.studies`, the quickstart) and is
+tagged by Louis (rule 10).
 
 ## 1. Scope (handoff §2, verbatim)
 

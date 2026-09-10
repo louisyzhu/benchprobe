@@ -1,10 +1,22 @@
 [project]
 name = "benchprobe"
-version = "0.0.0"
-description = "Analysis code behind benchmark-validity studies: trust, measure, predict. In development; nothing here ships before the day it is the analysis code behind a real study."
+version = "0.1.0"
+description = "Psychometrics for AI benchmark scores — reliability, factor structure, predictive validity and item-response scaling — validated by reproducing three published studies from pinned data."
 readme = "README.md"
 requires-python = ">=3.12"
 authors = [{ name = "Louis Yiven Zhu" }]
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["psychometrics", "benchmarks", "evaluation", "factor-analysis", "item-response-theory", "reliability", "LLM"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+]
+
 # Lower bounds are the versions the One Capability archive ran on
 # (frontier-ai-economic-validity/requirements.txt, Python 3.13). The exact
 # environment is pinned by uv.lock; see docs/reproducibility.md.
@@ -16,6 +28,10 @@ dependencies = [
     "factor_analyzer>=0.5.1",
     "pyarrow>=17.0",  # the Price of Intelligence panel is frozen as Parquet (ticket T6)
 ]
+
+[project.urls]
+Repository = "https://github.com/louisyzhu/benchprobe"
+Issues = "https://github.com/louisyzhu/benchprobe/issues"
 
 [project.optional-dependencies]
 # Retained but unused: benchprobe.irt (T6) reproduces the archive's Adam-then-L-BFGS fit in

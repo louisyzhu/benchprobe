@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+message: "If you use benchprobe, cite this release by version and the study whose numbers you rely on."
+title: "benchprobe: psychometrics for AI benchmark scores"
+type: software
+version: 0.1.0
+date-released: "YYYY-MM-DD"
+authors:
+  - family-names: Zhu
+    given-names: Louis Yiven
+    orcid: "https://orcid.org/0009-0001-5579-0340"
+license: MIT
+repository-code: "https://github.com/louisyzhu/benchprobe"
+abstract: >-
+  A Python library for the psychometric analysis of AI benchmark scores: reliability and grader
+  agreement (trust), factor structure and incremental validity (measure), leave-one-benchmark-out
+  prediction with bootstrap uncertainty (predict), and continuous-response item-response scaling
+  with anchor linking (irt). Every estimator is validated by reproducing the published numbers of
+  three studies from hash-pinned data, with a per-number reproducibility ledger.
+references:
+  - type: article
+    title: "One Capability or Many? Testing the Economic Validity of Frontier AI Evaluation"
+    authors:
+      - family-names: Zhu
+        given-names: Louis Yiven
+    year: 2026
+    identifiers:
+      - type: other
+        value: "arXiv:2608.29420"
+  - type: article
+    title: "Three Ways Classical Test Theory Misleads for LLM Judges"
+    authors:
+      - family-names: Zhu
+        given-names: Louis Yiven
+    year: 2026
+  - type: data
+    title: "The Price of Intelligence (archive v1.0.0)"
+    authors:
+      - family-names: Zhu
+        given-names: Louis Yiven
+    year: 2026
+    doi: 10.5281/zenodo.22177190

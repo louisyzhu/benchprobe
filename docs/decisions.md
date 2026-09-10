@@ -376,6 +376,31 @@ defects and a set of section findings; each is recorded below with what was done
 
 **Louis's checklist item "cross-family QA sweep recorded" (handoff §9) is met by this section.**
 
+# v0.1 — the door (2026-09-10, evening)
+
+Louis's reframing, after T8: the library should be something others can use, pitchable and
+low-maintenance, shipped as soon as possible; the "no product roadmap" entry test is lifted by him.
+Judgement calls made:
+
+- **The ship condition was already met.** The handoff's rule was "the day it is the analysis code
+  behind a real study — the thesis pipeline or the One Capability recomputation, whichever first".
+  The recomputation has been done since T7; the earlier reading that v0.1 also needed a paper citing
+  it by version was more conservative than the rule as written. v0.1 is the current tree plus a door.
+- **The door is an interface layer, not new statistics (rule 4).** `benchprobe.scores.ScoreMatrix`
+  (long ↔ wide, coverage, complete-case grid, `io.Grid` for `predict`, long form for `irt`);
+  `irt.panel_from_long` and `irt.fit_single_stage` (the same model without the anchor design, the
+  reference item chosen by the archive's own most-cells rule); `benchprobe.studies` with one entry
+  point per study so that nothing outside it knows a benchmark by name; `examples/quickstart.py`.
+  No estimator changed; 124 smoke tests, 44 golden.
+- **Torch extra removed from the story, kept in `pyproject`** as documented-unused; it will go at
+  v0.2 if nothing needs it.
+- **Release metadata:** version 0.1.0, MIT, classifiers, URLs, CITATION.cff naming the three
+  studies. Wheel built and install-tested in a clean venv. Tag, release and PyPI are Louis's
+  (rule 10); `docs/RELEASE_v0.1.md` has the commands.
+- **Low maintenance by construction:** CI runs the smoke set only; dependencies lower-bounded and
+  locked; no UI, service, scraper or scheduled job; the golden suite is run by hand when a
+  dependency moves.
+
 ## Open, assigned
 
 - Louis: confirm the recovered four-parameter logistic (T3) against the pre-registration text.

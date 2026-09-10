@@ -61,6 +61,8 @@ __all__ = [
     "convergence_diagnostics",
     "estimation_spec",
     "fit_crm",
+    "fit_single_stage",
+    "panel_from_long",
     "scale_repair_report",
     "two_stage_link",
 ]
@@ -263,6 +265,66 @@ def build_panel(
             **snap.provenance(),
             "scale_repaired": list(repaired),
             "rows_repaired": n_rows_repaired,
+            "epsilon_squeeze": eps,
+            "built_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+            "benchprobe": __version__,
+        },
+    )
+
+
+def panel_from_long(
+    frame: pd.DataFrame,
+    *,
+    model: str = "model",
+    item: str = "item",
+    score: str = "score",
+    epsilon: float = 1e-3,
+) -> Panel:
+    """A :class:`Panel` from your own long data (one row per model × item cell, scores in [0, 1]).
+
+    The door for data that is not the vendored archive: no snapshot, no scale metadata, no repair.
+    Scores at exactly 0 or 1 are squeezed inward by ``epsilon`` so the logit is defined, and the
+    count is recorded in ``n_squeezed``. Use :class:`benchprobe.scores.ScoreMatrix` to get here from
+    wide data (``ScoreMatrix.long()``).
+    """
+    missing = {model, item, score} - set(frame.columns)
+    if missing:
+        raise KeyError(f"long frame is missing columns {sorted(missing)}")
+    f = frame[[model, item, score]].rename(
+        columns={model: "model_id", item: "benchmark_id", score: "score"}
+    )
+    f = f[f["score"].notna()].copy()
+    p = f["score"].to_numpy(dtype=float)
+    if p.size == 0:
+        raise ValueError("no scored cells")
+    if p.min() < 0.0 or p.max() > 1.0:
+        raise ValueError(f"scores must lie in [0, 1] (got {p.min():.4g} to {p.max():.4g})")
+    eps = float(epsilon)
+    n_squeezed = int(np.sum((p <= eps) | (p >= 1.0 - eps)))
+    p = np.clip(p, eps, 1.0 - eps)
+    models = tuple(sorted(f["model_id"].unique()))
+    items = tuple(sorted(f["benchmark_id"].unique()))
+    mi = {m: i for i, m in enumerate(models)}
+    ki = {b: i for i, b in enumerate(items)}
+    f = f.assign(
+        proportion=p,
+        y=logit(p),
+        _m=f["model_id"].map(mi).to_numpy(dtype=int),
+        _k=f["benchmark_id"].map(ki).to_numpy(dtype=int),
+    )
+    return Panel(
+        frame=f,
+        models=models,
+        items=items,
+        model_of_cell=f["_m"].to_numpy(dtype=int),
+        item_of_cell=f["_k"].to_numpy(dtype=int),
+        y=f["y"].to_numpy(dtype=float),
+        epsilon=eps,
+        n_squeezed=n_squeezed,
+        repaired=(),
+        n_rows_repaired=0,
+        provenance={
+            "source": "user data (panel_from_long)",
             "epsilon_squeeze": eps,
             "built_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
             "benchprobe": __version__,
@@ -563,6 +625,37 @@ def fit_crm(
     )
 
 
+def fit_single_stage(
+    panel: Panel,
+    *,
+    reference_item: str | None = None,
+    priors: dict[str, float] | None = None,
+    adam_steps: int = 3000,
+    lr: float = 0.05,
+) -> CrmFit:
+    """One fit of the whole panel with every ability and item free except the reference item,
+    whose difficulty and log-discrimination are held at zero to fix the scale.
+
+    This is the model of :func:`two_stage_link` without the anchor design, for data that has no
+    ratified anchor set. ``reference_item`` defaults to the item scored on the most models, the
+    archive's own rule for choosing one.
+    """
+    if reference_item is None:
+        counts = np.bincount(panel.item_of_cell, minlength=panel.K)
+        reference_item = panel.items[int(np.argmax(counts))]
+    ref = panel.index_of_item(reference_item)
+    free_items = np.ones(panel.K, dtype=bool)
+    free_items[ref] = False
+    return fit_crm(
+        panel,
+        free_models=np.ones(panel.M, dtype=bool),
+        free_items=free_items,
+        priors=priors,
+        adam_steps=adam_steps,
+        lr=lr,
+    )
+
+
 # --------------------------------------------------------------------------------------------
 # Two-stage fixed-parameter anchor linking
 # --------------------------------------------------------------------------------------------
@@ -693,7 +786,12 @@ def two_stage_link(
 # --------------------------------------------------------------------------------------------
 
 
-def ability_table(fit: TwoStageFit, *, theta_prior_sd: float | None = None) -> pd.DataFrame:
+def ability_table(
+    fit: TwoStageFit | CrmFit,
+    *,
+    panel: Panel | None = None,
+    theta_prior_sd: float | None = None,
+) -> pd.DataFrame:
     """Per-model ability, test information and standard error, on the archive's two definitions.
 
     For the homoscedastic continuous response model the information a benchmark contributes about
@@ -712,14 +810,19 @@ def ability_table(fit: TwoStageFit, *, theta_prior_sd: float | None = None) -> p
     ``se_theta`` that its name implies. Reported, not reconciled (rule 3); see
     ``docs/decisions.md``, 2026-09-10. ``information_basis`` records which set each column used.
     """
-    panel = fit.panel
+    if isinstance(fit, TwoStageFit):
+        panel, final = fit.panel, fit.stage2
+    else:
+        if panel is None:
+            raise ValueError("pass panel= when fit is a single CrmFit")
+        final = fit
     prior_sd = (
         float(theta_prior_sd)
         if theta_prior_sd is not None
-        else float(fit.stage2.priors["theta_prior_sd"])
+        else float(final.priors["theta_prior_sd"])
     )
-    a = fit.stage2.discrimination
-    inv_var = float(np.exp(-2.0 * fit.stage2.log_sigma))
+    a = final.discrimination
+    inv_var = float(np.exp(-2.0 * final.log_sigma))
 
     n_cells = np.bincount(panel.model_of_cell, minlength=panel.M)
     information_cells = np.bincount(
@@ -741,7 +844,7 @@ def ability_table(fit: TwoStageFit, *, theta_prior_sd: float | None = None) -> p
             "n_cells": n_cells.astype(int),
             "n_benchmarks": n_benchmarks.astype(int),
             "mean_discrimination": mean_discrimination,
-            "theta": fit.stage2.theta,
+            "theta": final.theta,
             "test_information": information_distinct,
             "se_predicted_from_information": 1.0 / np.sqrt(information_distinct),
             "se_theta": 1.0 / np.sqrt(information_cells + 1.0 / prior_sd**2),
