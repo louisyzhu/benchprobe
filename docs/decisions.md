@@ -104,8 +104,39 @@ without a ticket that says so.
 - Guard added so it cannot recur: `tests/smoke/test_skeleton.py` parses every file under `.github/workflows/` and requires each step to carry `uses` or `run` and each step name to remain a string — coordinating session; verified by reintroducing the original bug, which the test fails on, then restoring. `pyyaml` added to the dev dependency group for it (dev-only; the package's runtime dependencies are unchanged).
 - `workflow_dispatch` added to the workflow triggers — coordinating session; GitHub Actions was disabled at the repository level when the code was first pushed, so no run started, and a manual trigger is what lets CI be started (and re-started) without an empty commit.
 
+## 2026-09-10 — T5.1 / T7.2, from a fourth same-family review
+
+A review by Claude Code (a Claude model, so this is a fourth same-family pass and **not** the T8
+cross-family sweep, which remains open). Each claim was checked against the archives and the code
+before acting; two were not substantiated and are recorded as such.
+
+**Confirmed and fixed.**
+
+- `report.compare()` returned a deviation of 0.0 when it found no numeric columns in common, so a table could be judged "within tolerance" on a comparison of zero cells — demonstrated: two tables disagreeing on every shared column returned `0.0`, `within_tolerance` True. It now raises. Six of the twelve tables let it choose the columns, so this was a live hole, not a hypothetical one.
+- `k_selection_evidence.csv` included the `BIC_min` row — which benchprobe copies out of the archive because the BIC computation is not in the notebook — in the comparison *against that same archive*, at tolerance zero: a self-comparison dressed as a passing check. The comparison now covers only the three recomputed rows, and the caption says which.
+- The ladder table's caption now states that its pooling rule was **inferred, not extracted**: the archive ships no code producing `lobo_rung_summary.csv`, and mean-of-RMSE was chosen because it reproduces all ten of its rows while the notebook's own `_ladder` helper (root-mean-square) reproduces none. The table is still recomputed, but on a rule benchprobe reverse-engineered, and a reader is entitled to know that.
+- **The published-grid test was mis-scaled, and this is the one arithmetic error the review found.** Each grid cell is a mean of 60 replicates; the difference between two such means has standard error `sd·sqrt(2/60)`, not the per-replicate `sd` the test divided by. The old 0.5-SD threshold was 2.74 standard errors under a stricter-sounding name. Re-expressed at three standard errors of the difference (`TOL_PUBLISHED_SE`), which is both the right scale and a tighter test: worst cell 1.72 SE, mean 0.88. Changing a golden tolerance is permitted only by ticket (rule 1); this is that ticket, the change makes the test stricter, and it was made after the row passed, never to rescue it. The archive README's own "0.31 of one per-cell SD" carries the same mis-scaling and is a note for the coordinating thread.
+
+**Not substantiated.**
+
+- *"The 4000 resamples behind the [−5.3, +32.7] pp interval mix shares of different factors."* Measured over the interval's own 2000 draws: column 0 was the largest factor in **2000 of 2000** draws on the raw grid and 2000 of 2000 on the residualised grid (full-sample sums of squared loadings 7.79 / 2.34 / 0.32 and 5.80 / 3.42 / 0.51). The thin margin the review is thinking of (4.78 vs 4.27) is on the residualised `compute_known` grid, which carries no bootstrap; it was transposed onto an interval computed on `complete_case`. The `first_factor_share` warning stands as a guard, but nothing is contaminated.
+- *"`predict.ladder`'s default pooling matches nothing in the archive."* It matches the archived `lobo_rung_summary.csv` in all ten rows, verified twice independently. What it matches nothing of is the notebook's `_ladder` *helper* — which is the finding already recorded at T4, stated the other way round.
+
+**Accepted as open, not yet acted on.**
+
+- `MANIFEST.json` records the hash of every file it lists but is not itself hashed, so a tampered manifest would relabel rather than fail. Low severity for a single-author repository; the fix is a hash of the manifest in the golden tests, which is a ticket of its own.
+- The review's point that a passing `pytest -m "golden and not slow"` does not establish the ladder rows is correct and is why the slow variant exists; the reproducibility ledger already distinguishes them.
+
+**Finding about the JUDGe archive, carried faithfully by benchprobe.** `sweeps.py` builds
+`range_at_measured_error` from `mean[:, 1]`, which is the 5 % column of `JUDGE_ERRORS`, while
+labelling it `judge_error: 0.0472`. The range reported there is the range at 5 %, not at the
+measured 4.72 % rate. The separate `measured_error_run` block in `sweep_grid.json` *is* at 0.0472
+and is unaffected. If the paper quotes that field, the sentence needs checking.
+
 ## Open, assigned
 
 - Louis: confirm the recovered four-parameter logistic (T3) against the pre-registration text.
 - T6: the Price of Intelligence archive (Zenodo 10.5281/zenodo.22177190, one 4.2 MB zip) could not be downloaded from the session environment (the proxy refuses zenodo.org) and no GitHub mirror was found; T6 starts when Louis attaches the archive.
+- T8 remains open: the 10 September review was by Claude Code, a Claude model. The house rule is a different family (`docs/qa/T8_cross_family_brief.md`).
+- Ticket, unscheduled: hash `MANIFEST.json` itself, so a snapshot cannot be relabelled without failing.
 - v0.1: licence choice; CITATION.cff; commit author identity.

@@ -201,6 +201,11 @@ def compare(
     if (merged["_merge"] != "both").any():
         missing = merged.loc[merged["_merge"] != "both", keys + ["_merge"]]
         raise ValueError(f"rows do not match one to one on {keys}:\n{missing.to_string()}")
+    if not numeric:
+        raise ValueError(
+            f"no numeric columns in common to compare on {keys}; a comparison over zero cells "
+            "would report a deviation of zero"
+        )
     dev = pd.DataFrame({k: merged[k] for k in keys})
     for c in numeric:
         dev[c] = (merged[f"{c}_archived"].astype(float) - merged[f"{c}_new"].astype(float)).abs()
@@ -496,7 +501,11 @@ def reproduce_one_capability(
             dev,
             1e-3,
             [
-                "Pooling: arithmetic mean of per-target RMSEs (docs/decisions.md, T4).",
+                "Pooling: arithmetic mean of per-target RMSEs — inferred, not extracted. The "
+                "archive ships no code that produces this table; mean-of-RMSE is the rule that "
+                "reproduces all ten of its rows from lobo_metrics_full.csv and root-mean-square "
+                "(what the notebook's own _ladder helper uses) reproduces none (docs/decisions.md, "
+                "T4).",
                 "Best-learner column "
                 + ("matches the archive." if learners_match else "DIFFERS from the archive."),
             ],
@@ -624,7 +633,13 @@ def reproduce_one_capability(
             arch.set_index("criterion").loc["BIC_min"].to_dict() | {"criterion": "BIC_min"},
         ]
     )[["criterion", "selected_k", "detail"]]
-    dev, _ = compare(ksel, arch, keys=["criterion"], numeric=["selected_k"])
+    recomputed_rows = ["parallel_analysis", "kaiser_eig_gt_1", "scree_elbow"]
+    dev, _ = compare(
+        ksel[ksel.criterion.isin(recomputed_rows)],
+        arch[arch.criterion.isin(recomputed_rows)],
+        keys=["criterion"],
+        numeric=["selected_k"],
+    )
     record(
         name,
         RECOMPUTED,
@@ -632,9 +647,11 @@ def reproduce_one_capability(
         dev,
         0,
         [
-            "The BIC_min row is regenerated from the archive: the BIC computation is not in the "
-            "archived notebook. The detail column is text written in the archive's format and is "
-            "not compared; only selected_k is."
+            "Three of the four rows are recomputed and compared (parallel_analysis, "
+            "kaiser_eig_gt_1, scree_elbow); the BIC_min row is copied from the archive because the "
+            "BIC computation is not in the archived notebook, and is excluded from the comparison "
+            "rather than compared against itself. The detail column is text written in the "
+            "archive's format and is not compared; only selected_k is."
         ],
     )
 
