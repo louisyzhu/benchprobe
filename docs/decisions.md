@@ -216,9 +216,35 @@ half a unit of the last printed digit, residual scale 1e-6, item parameters and 
 5e-4, abilities 1e-3, information 5e-3 — and the observed worst deviations are recorded in the
 test's docstring so drift is visible. They were set before the first golden run, not after.
 
+**Two things T6 does not do, stated so the gap is not mistaken for coverage.**
+
+- *Convergence is claimed on a weaker criterion than the archive's.* `CrmFit.converged` is
+  L-BFGS's success flag plus a gradient bound. The archive judges convergence on the Newton
+  decrement and the Hessian spectrum, and says why: an earlier specification of theirs reported a
+  small gradient at a saddle point, so the eigenvalue check is part of their criterion rather than
+  a diagnostic beside it (`docs/phase2-1-estimation.md` §4). An absolute gradient bound is the
+  criterion they explicitly rejected. What establishes the T6 fit is not benchprobe's convergence
+  flag but the agreement of its parameters with the published ones. **Ticket T6.1:** Hessian
+  eigenvalues and the Newton decrement on the free block, to reproduce the archive's four
+  convergence rows (stage-1 min eigenvalue 0.040, decrement 1.9e-9; stage-2 0.086, 4.8e-8,
+  condition number 217,549).
+- *Plausible values are not implemented.* The archive draws L = 20 per model
+  (`data/interim/theta_draws.parquet`, 15,640 rows), because the upper end of the posterior SD
+  range belongs to models observed on one uninformative benchmark. benchprobe reports the point
+  estimate and its standard error only. Not vendored, not claimed, and out of SPEC.md's `irt`
+  scope as written.
+
+**Cross-checks against the archive's prose that T6 passes but does not lock.** The archive's
+estimation note quotes summary statistics that the vendored tables reproduce to the digits printed:
+posterior SD of θ median 0.1354 / min 0.0326 / max 3.3368 against its "0.135 / 0.033 / 3.337", and
+discrimination min 0.1003 / max 7.8365 / median 1.0094 against its "0.100 / 7.837 / 1.009". These
+are checks on the *archived tables*, not on benchprobe, which is why they are recorded here rather
+than added as golden rows.
+
 ## Open, assigned
 
 - Louis: confirm the recovered four-parameter logistic (T3) against the pre-registration text.
+- T6.1: Hessian-based convergence diagnostics for `benchprobe.irt` (see above).
 - Coordinating thread: the panel's `score_scale`/`score_divisor` metadata for the four benchmarks
   above should be corrected at source, and `se_predicted_from_information` renamed or recomputed.
 - T8 remains open: the 10 September review was by Claude Code, a Claude model. The house rule is a different family (`docs/qa/T8_cross_family_brief.md`).

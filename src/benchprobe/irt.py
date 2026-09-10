@@ -254,7 +254,18 @@ def build_panel(
 
 @dataclass(frozen=True, eq=False)
 class CrmFit:
-    """One penalised maximum-a-posteriori fit of the continuous response model."""
+    """One penalised maximum-a-posteriori fit of the continuous response model.
+
+    ``converged`` is L-BFGS's own success flag, and ``max_abs_gradient`` the largest absolute
+    gradient at the solution. **This is a weaker claim than the archive's.** The archive judges
+    convergence on the Newton decrement and the Hessian spectrum — deliberately, because an
+    earlier specification of theirs reported a small gradient at a saddle point
+    (``docs/phase2-1-estimation.md`` §4) — and an absolute gradient bound is exactly the criterion
+    they rejected as punishing on one parameter block and slack on another. benchprobe does not
+    compute the Hessian, so ``converged`` here does not establish what the archive's ``converged``
+    establishes; the agreement of the fitted parameters with the published ones does. Recorded as
+    an open ticket rather than glossed (docs/decisions.md, 2026-09-10).
+    """
 
     theta: np.ndarray
     difficulty: np.ndarray
