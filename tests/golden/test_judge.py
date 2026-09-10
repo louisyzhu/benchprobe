@@ -25,6 +25,7 @@ Adjust only by ticket (rule 1).
 
 from __future__ import annotations
 
+import hashlib
 import importlib
 import json
 from pathlib import Path
@@ -36,6 +37,12 @@ pytestmark = pytest.mark.golden
 
 SNAPSHOT = "judge_2026-08-31"
 REFERENCE = Path(__file__).with_name("judge_sweeps_reference.json")
+
+# The oracles these tests read from files, pinned here so that changing a fixture or a manifest
+# entry fails the test instead of moving the target (T8, Codex review, defect 2).
+REFERENCE_SHA256 = "ebda3c5102588ddae7c73f86f6f3c354175f58429cabb09cdbfbc7d24cf0f77c"
+SWEEP_GRID_SHA256 = "818830ffb448af8b035574e44441a7362185e2a466282a18e7f21630db39abcb"
+MANIFEST_SHA256 = "0d4c08d91010263f249f1b2774c270f7fbbfaa45f9495d1ad94ce575435c8530"
 
 # Real bank (archive README, "Reproduction notes")
 N_JUDGED = 180  # of 210 items (archive make_figures.load_bank drops rows without judge verdicts)
@@ -86,6 +93,22 @@ def bank():
 @pytest.fixture(scope="module")
 def summary(bank):
     return api("trust", "bank_summary")(bank)
+
+
+def test_the_oracles_are_the_files_these_numbers_came_from():
+    load_snapshot = api("io", "load_snapshot")
+    snap = load_snapshot(SNAPSHOT)
+    got = {
+        "judge_sweeps_reference.json": hashlib.sha256(REFERENCE.read_bytes()).hexdigest(),
+        "sweep_grid.json": hashlib.sha256(snap.file("sweep_grid.json").read_bytes()).hexdigest(),
+        "MANIFEST.json": hashlib.sha256((snap.folder / "MANIFEST.json").read_bytes()).hexdigest(),
+    }
+    want = {
+        "judge_sweeps_reference.json": REFERENCE_SHA256,
+        "sweep_grid.json": SWEEP_GRID_SHA256,
+        "MANIFEST.json": MANIFEST_SHA256,
+    }
+    assert got == want, {k: (got[k], want[k]) for k in want if got[k] != want[k]}
 
 
 def test_bank_size(bank):

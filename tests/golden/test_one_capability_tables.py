@@ -20,6 +20,7 @@ import benchprobe.report as r
 
 pytestmark = pytest.mark.golden
 
+MANIFEST_SHA256 = "9d7a244154ae87924fece8ae58005bf6af693b89f45829d690a02643e352a083"  # T8
 ARCHIVED_SHA256 = {  # frontier-ai-economic-validity @ 946ce845, data/processed/
     "loadings_raw.csv": "a202c72b037844d5519c1d039c661c1f6f3fb56b73bacc3b1d199356a709684d",
     "loadings_residualised.csv": "419d7484cc38fecdd78bf0950c9039ed8204252d5ec9c856ef62bbd6be7d2d1e",
@@ -66,6 +67,8 @@ FAST_PATH_REGENERATED = {"cluster_validation.csv", "lobo_rung_summary.csv"}
 
 def test_archived_tables_are_the_archive():
     snapshot = bio.load_snapshot()
+    manifest = hashlib.sha256((snapshot.folder / "MANIFEST.json").read_bytes()).hexdigest()
+    assert manifest == MANIFEST_SHA256, "MANIFEST.json"
     for name, digest in ARCHIVED_SHA256.items():
         path = snapshot.file(f"archived/{name}")
         assert hashlib.sha256(path.read_bytes()).hexdigest() == digest, name

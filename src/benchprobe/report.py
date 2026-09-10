@@ -84,6 +84,9 @@ class TableResult:
     tolerance: float | None = None
     within_tolerance: bool | None = None
     notes: list[str] = field(default_factory=list)
+    regenerated_columns: list[str] = field(default_factory=list)
+    """Columns copied from the archive inside an otherwise recomputed table (T8)."""
+    judged: bool = True
 
 
 @dataclass(eq=False)
@@ -126,11 +129,27 @@ def caption(
     tolerance: float | None = None,
     notes: list[str] | None = None,
     within: bool | None = None,
+    judged: bool = True,
+    regenerated_columns: list[str] | None = None,
 ) -> str:
     """The boundary statement every emitted table carries (rules 7 and 8). A table whose
-    deviation exceeds its tolerance says so in the caption instead of asserting its tier."""
+    deviation exceeds its tolerance says so in the caption instead of asserting its tier; a table
+    whose criterion was not applied (``judged=False``, quick runs) says *that* first, before
+    naming the tier it would have been judged against; and a table some of whose columns were
+    copied from the archive names them in its opening clause, not in a trailing note
+    (T8, Codex review, defect 8)."""
     src = snapshot.manifest.get("source", {})
     origin = f"{src.get('repository', '?')} @ {str(src.get('commit', '?'))[:8]}"
+    if not judged and tier in (RECOMPUTED, STATISTICAL):
+        text = (
+            f"{name} — NOT JUDGED in this run (quick mode: shrunk bootstraps, criterion not "
+            f"applied) by benchprobe {__version__} from snapshot {snapshot.name} "
+            f"(SHA-256 {snapshot.sha256[:12]}…) for {study}; intended tier {tier}; point values "
+            f"are the recomputed ones. Archived table: {origin}."
+        )
+        for note in notes or []:
+            text += f" {note}"
+        return text
     if within is False and tier in (RECOMPUTED, STATISTICAL):
         text = (
             f"{name} — NOT reproduced within tolerance by benchprobe {__version__} from snapshot "
@@ -142,10 +161,18 @@ def caption(
             text += f" {note}"
         return text
     if tier == RECOMPUTED:
-        text = (
-            f"{name} — recomputed by benchprobe {__version__} from snapshot {snapshot.name} "
-            f"(SHA-256 {snapshot.sha256[:12]}…) for {study}"
-        )
+        if regenerated_columns:
+            text = (
+                f"{name} — recomputed by benchprobe {__version__} EXCEPT "
+                f"{', '.join(regenerated_columns)}, which are regenerated (copied from the "
+                f"archive, not recomputed, and not compared); from snapshot {snapshot.name} "
+                f"(SHA-256 {snapshot.sha256[:12]}…) for {study}"
+            )
+        else:
+            text = (
+                f"{name} — recomputed by benchprobe {__version__} from snapshot {snapshot.name} "
+                f"(SHA-256 {snapshot.sha256[:12]}…) for {study}"
+            )
         if deviation is not None:
             text += (
                 f"; largest absolute deviation from the archived table {deviation:.3g} "
@@ -195,6 +222,14 @@ def compare(
             and pd.api.types.is_numeric_dtype(archived[c])
             and c in new.columns
         ]
+    for label, frame in (("archived", archived), ("new", new)):
+        dup = frame.duplicated(subset=keys, keep=False)
+        if dup.any():
+            raise ValueError(
+                f"{label} table has {int(dup.sum())} rows sharing a key on {keys}; a many-to-many "
+                f"merge would compare cells that do not correspond:\n"
+                f"{frame.loc[dup, keys].head().to_string(index=False)}"
+            )
     merged = archived.merge(
         new, on=keys, suffixes=("_archived", "_new"), how="outer", indicator=True
     )
@@ -343,16 +378,10 @@ def reproduce_one_capability(
         parallel_analysis_iter = min(parallel_analysis_iter, 100)
     results: list[TableResult] = []
 
-    def record(name, tier, path, dev=None, tol=None, notes=None, judged=True):
+    def record(name, tier, path, dev=None, tol=None, notes=None, judged=True, regenerated=None):
         notes = list(notes or [])
-        if not judged:
-            notes.append(
-                "Quick run (shrunk bootstraps): the Monte-Carlo criterion is not applied and this "
-                "table is not judged; the point values are the recomputed ones."
-            )
-            within = None
-        else:
-            within = None if dev is None else bool(dev <= tol)
+        regenerated = list(regenerated or [])
+        within = None if (not judged or dev is None) else bool(dev <= tol)
         cap = caption(
             name,
             tier,
@@ -362,6 +391,8 @@ def reproduce_one_capability(
             tolerance=tol,
             notes=notes,
             within=within,
+            judged=judged,
+            regenerated_columns=regenerated,
         )
         results.append(
             TableResult(
@@ -373,6 +404,8 @@ def reproduce_one_capability(
                 tolerance=tol,
                 within_tolerance=within,
                 notes=notes,
+                regenerated_columns=regenerated,
+                judged=judged,
             )
         )
 
@@ -450,11 +483,12 @@ def reproduce_one_capability(
         for f in recomputed_fields
     )
     notes = [
-        f"Fields regenerated from the archive, not recomputed: {', '.join(regenerated_fields)} "
-        "(the logit transform behind logit_efa_factor1_share is not in the archived notebook; "
-        "the Kearns figures are literature constants)."
+        "The logit transform behind logit_efa_factor1_share is not in the archived notebook; the "
+        "Kearns figures are literature constants."
     ]
-    record(name, RECOMPUTED, _write(out, name, task1), dev, 5e-4, notes)
+    record(
+        name, RECOMPUTED, _write(out, name, task1), dev, 5e-4, notes, regenerated=regenerated_fields
+    )
 
     # 4. cluster_validation.csv — clustering is outside SPEC §1; copied
     name = "cluster_validation.csv"
@@ -653,6 +687,7 @@ def reproduce_one_capability(
             "rather than compared against itself. The detail column is text written in the "
             "archive's format and is not compared; only selected_k is."
         ],
+        regenerated=["row BIC_min"],
     )
 
     # 9. ksweep_rung_iv.csv

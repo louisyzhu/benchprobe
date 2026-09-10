@@ -70,7 +70,7 @@ without a ticket that says so.
 ## 2026-09-07 — T5 trust
 
 - JUDGe item bank and published grid vendored as snapshot `judge_2026-08-31` (CC BY 4.0, commit `126d1bce`), loaded through `io.load_snapshot` like the One Capability table; `Snapshot` gains `.folder` and `.file(name)` so a multi-file snapshot's extra files are reachable only through the manifest — coordinating session; one loader, one integrity rule.
-- Archive function names kept (`kr20`, `bb_gof`, `livingston_lewis`, `phi_lambda`, …), with `bb_gof` and `livingston_lewis` returning named tuples instead of bare tuples — coordinating session; names join to the archive, and tuple unpacking still works.
+- Archive function names kept (`kr20`, `bb_gof`, `livingston_lewis`, `phi_lambda`, …), with `bb_gof` and `livingston_lewis` returning named tuples instead of bare tuples — coordinating session; names join to the archive. (Corrected at T8: the archive's `bb_gof` returned `(chi2, df, p, (a, b))`, four values with a nested pair; benchprobe's `BetaBinomialFit` is five flat fields, so four-value unpacking written against the archive does *not* work. The earlier line said it did; that was wrong.)
 - JUDGe golden rows added in `tests/golden/test_judge.py`: the six real-bank quantities the archive README states reproduce bit-for-bit (tolerance half a unit of the last printed digit), the archive's own `sweeps.py` output (tolerance 1e-9; `tests/golden/judge_sweeps_reference.json` is that script's output under the locked environment, 7 Sept 2026), and the published grid and measured-error run at 0.5 SD per cell — coordinating session; handoff §6 fixes only the One Capability rows, so these are the T5 acceptance test the handoff's T5 line ("document the statistically-reproduced tier and seeds") implies. Result: real-bank rows recomputed exactly (0.5223 / 0.5231 / 4.72 % / 0.9206 / +0.4611 / χ² 5.3122, df 6, p 0.5044); `sweeps()` reproduces the archive script to 0.0; the published grid to 0.315 SD (README: 0.31).
 - Krippendorff's α implemented from the coincidence-matrix definition (nominal, ordinal, interval, ratio) and Cohen's κ delegated to scikit-learn — coordinating session (new code, in scope by SPEC §1). Reference values: Krippendorff (2011)'s worked example (0.7434 / 0.8154 / 0.8491 / 0.7974, matching the published 0.743 and 0.849) and six random fixtures computed with the `krippendorff` package (`tests/trust/krippendorff_reference.json`, agreement 2e-16); κ against the classic 2 × 2 example (0.4).
 - `gstudy_two_way` factored out of the archive's `phrasing_gstudy` loop so the variance components are callable on real data — coordinating session; `phrasing_gstudy` calls it and still reproduces the archive to 0.0.
@@ -241,12 +241,146 @@ discrimination min 0.1003 / max 7.8365 / median 1.0094 against its "0.100 / 7.83
 are checks on the *archived tables*, not on benchprobe, which is why they are recorded here rather
 than added as golden rows.
 
+# T8 — cross-family QA (2026-09-10)
+
+Reviewer: **Codex (OpenAI, "model 5.6 sol high" as Louis reported it)**, reading the T8 packet at
+commit `7e253a1`. First review of this repository by a model outside the Claude family. Twelve
+defects and a set of section findings; each is recorded below with what was done. Nothing in
+`tests/golden/` was loosened; four tolerances were tightened and are recorded under their ticket.
+
+**Defects, in the reviewer's severity order.**
+
+1. *`worst()` in the T6 golden test skips NaN.* **Confirmed** — `Series.max()` and `idxmax()` skip
+   NaN, so a partly-NaN recomputation could pass on its finite remainder. **Fixed:** an explicit
+   non-finite check on both sides before the comparison. (`compare()` in `report.py` already
+   treated NaN as failure; the T6 helper did not.)
+2. *`judge_sweeps_reference.json` and `sweep_grid.json` are read from files, not pinned.*
+   **Confirmed. Fixed:** `test_judge.py` pins the SHA-256 of both, and of the snapshot's
+   `MANIFEST.json`. The same manifest pin was added for the other two snapshots
+   (`test_one_capability_tables.py`, `test_price_of_intelligence.py`), which closes the open ticket
+   "hash `MANIFEST.json` itself". `io.py`'s docstring, which said the manifest's SHA-256 was
+   verified on load, was wrong and now says what is and is not authenticated.
+3. *`CrmFit.converged` was `result.success` only, while the docs said "plus a gradient bound".*
+   **Confirmed** — the docs overstated what the code did. **Fixed by doing T6.1:** the Hessian on
+   the free block (central differences of the analytic gradient), its spectrum, the Newton
+   decrement and the largest remaining ability step, judged by the archive's own rule. Reproduces
+   the archive's recorded diagnostics: min eigenvalue 0.040 / 0.08614 (relative 4e-12 / 2e-5),
+   max eigenvalue 19747.0 / 18740.3, condition number 493675 / 217544 (archive 217549), zero
+   negative eigenvalues, both stages. benchprobe's own decrement (1.4e-10 / 1.6e-10) and ability
+   step (5e-6 / 1.7e-5) are smaller than the archive's (1.9e-9 / 4.8e-8; 2e-5 / 3.5e-4): it
+   stopped closer. Locked as golden rows. Whole file still runs in 5 s.
+4. *The package-level "extracted" claim covers reconstructed methods.* **Confirmed.** README,
+   SPEC §0 and the package docstring now say: extracted where the archive ships code,
+   reconstructed and named where it does not — the logistic form, the ladder pooling rule, the
+   `compute_known` grid, and all of `irt`.
+5. *T6's vector tolerances can hide small disagreements; the "reporting precision" justification is
+   contradicted by the full-float CSVs.* **Confirmed on the justification; partly on the
+   tolerances.** T6.1 supplied the real reason, and it is recorded in the test docstring: the
+   archive's published solution is up to its own remaining Newton step from the optimum (3.5e-4 on
+   abilities, 7.5e-5 on difficulties, 2.5e-5 on log-discriminations, 1.1e-8 on the log residual
+   scale — all computed by evaluating benchprobe's objective at the archive's point), and the
+   observed deviations per block are those steps to within 10 %. Tolerances are now set from
+   them: abilities 1e-3 (the archive's own convergence resolution, unchanged), items and standard
+   errors 2e-4 (from 5e-4), residual scale 1e-7 (from 1e-6); information 5e-3 unchanged, with its
+   derivation stated as loose. Tightened by this ticket after the rows passed, never to rescue
+   them (rule 1, as at T5.1). **Added, as the reviewer asked:** a rank-order test — zero reversals
+   among model pairs the archive separates by more than the tolerance, at most five in total,
+   Spearman ≥ 0.999999.
+6. *The scale repair is operationally justified but the documentation overstates: the bit-for-bit
+   test proves grid membership, not transformation history, and the packet cannot distinguish
+   "metadata wrong" from "estimator ignored correct metadata".* **Confirmed, and the reviewer's
+   phrasing is the right one.** The column is renamed `share_on_two_decimal_percent_grid`; the
+   docstring says what the test measures and that the evidence is the joint pattern (221 of 221 on
+   the grid against a 60 % background, no score above 1, and joint reproduction of every published
+   quantity only without the divisor), not any single value. The claim in T6's own section above
+   is left as written and corrected here: the defensible statement is that *the published fit
+   treated the stored values as proportions despite the recorded divisor*, so the panel's metadata
+   is inconsistent with the fit that was published from it; which of the two is "wrong" is a
+   question for the ingestion code, which the archive does not ship.
+7. *The JUDGe G-study's stated interpretation contradicts its formula.* **Confirmed — and this is
+   a finding about the archive and the paper, not about benchprobe.** `sweeps.py` says Φ "is
+   v_p/(v_p + (v_ph + v_e)/R), since a deployment commits to one phrasing rather than averaging
+   over R of them". Dividing the phrasing and residual components by R is the dependability of a
+   *mean over R phrasings* (Brennan's Φ with n′ = R); a deployment that commits to one phrasing has
+   Φ = v_p/(v_p + v_ph + v_e). benchprobe reproduces the archive's number to 1e-9 and its docstring
+   carried the same contradiction; the docstring now states the formula and the discrepancy. The
+   difference is not small. From the reproduced components (R = 3): *irrelevant* 0.970 as computed
+   vs 0.917 for one phrasing; *mild* 0.958 vs 0.885; *large* 0.876 vs 0.686;
+   *deterministic_given_phrasing* 0.947 vs 0.849. **For the coordinating thread, with priority:**
+   if the paper reports these Φ values under the single-phrasing reading, they are overstated by
+   0.05–0.19. No number in benchprobe changes (rule 3); a `single_condition=True` option is a
+   ticket, not a silent addition (rule 4).
+8. *"Recomputed" tables with copied fields; quick-mode captions assert the tier before
+   disclaiming.* **Confirmed. Fixed:** `TableResult` gains `regenerated_columns` and `judged`; a
+   partly-copied table's caption opens "recomputed EXCEPT <columns>, which are regenerated"; a
+   table not judged opens "NOT JUDGED in this run" before naming its intended tier. The tier
+   *label* on `task1_structure_results.json` and `k_selection_evidence.csv` stays `recomputed`,
+   because the golden tables test locks tiers and the boundary is now in the caption where rule 8
+   wants it; the reviewer's point that the label alone is misleading is accepted, and the
+   caption is the fix.
+9. *`ability_table` took its prior from the global archive record, not from the fit.*
+   **Confirmed. Fixed:** `CrmFit.priors` records the penalty scales the fit used and
+   `ability_table` reads them from `fit.stage2`. Same numbers on the archive's priors (worst
+   se(θ) deviation 2.66e-5, as before).
+10. *`compare()` does not enforce unique keys.* **Confirmed. Fixed:** raises on a duplicated key in
+    either table; smoke test added.
+11. *`bb_gof`'s return shape changed incompatibly, and the decision record said unpacking still
+    works.* **Confirmed on the record; the API stays.** The line at T5 was wrong and is corrected
+    in place above. benchprobe does not promise the archive's call signatures.
+12. *The manifest is trusted but unauthenticated.* **Confirmed.** Closed together with 2.
+
+**Section findings, and what was done with them.**
+
+- *Part 4 omitted the counterparts for `io.benchmark_coverage`, `io.model_coverage`,
+  `trust.load_bank` and most of `report.py`.* Correct; a packet limitation. `load_bank` was
+  extracted from `make_figures.load_bank` and the coverage rules from the archive's Phase-1 cells,
+  neither of which the packet carried. The next packet includes them. The reviewer's "unverified,
+  not clean" is the right status for those four until then.
+- *`build_panel` clips rather than failing fast, and counts cells within ε rather than "exactly
+  0 or 1" as the archive's note says.* **Confirmed on the first; the second turned into a finding
+  about the archive.** Fail-fast added: any proportion outside [0, 1] after the recorded scale
+  raises. On the count: the note says 89 cells "sat at exactly 0 or 1"; counting exactly-boundary
+  cells in the panel gives **88**. One cell — `glm-5.2_unknown` on `gbaeval_external`, score
+  1/5807 = 0.000172 — lies inside ε without being on the boundary, and the archive's recorded 89
+  includes it. So the archive counted the cells its clip moved, and its prose is off by one.
+  benchprobe keeps the rule that reproduces the recorded count and says why in the code.
+- *The gradient had no finite-difference test; coordinate fixation was not independently
+  checked.* **Fixed:** both added to the smoke set, with a check that a non-minimum is not called
+  converged whatever the optimiser flag says.
+- *All T6 comparison tables come from the same unpublished optimum; nothing breaks the
+  shared-dependence loop.* **This was the most useful point in the review, and T6.1 answers it.**
+  The archive records the gradient, Newton decrement and remaining ability step *at its own
+  published solution*. Assembling that solution from the published tables and evaluating
+  benchprobe's objective there returns 5.487e-5, 4.787e-8 and 3.480e-4 — the archive's recorded
+  5.4868e-5, 4.7873e-8 and 3.4798e-4, to the digits printed. Those depend on the objective and its
+  curvature, not on any optimiser: the two implementations are the same function. Locked as
+  `test_the_archives_own_diagnostics_reproduce_at_its_published_point`. One observation from the
+  same computation is recorded and not explained: the objective at the archive's point is 8.8e-6
+  above benchprobe's, more than the 2.4e-8 its own decrement predicts is available; it is within
+  the objective tolerance and nothing is locked on it.
+- *The three-Monte-Carlo-SD interval criterion is a proximity heuristic, not a fidelity test; the
+  implementation's own instability enlarges its tolerance; dividing by one run's SD is stricter
+  than three SDs of a difference.* **Agreed on all three, recorded, not changed.** The criterion
+  was set by ticket at T7 for the statistically-reproduced tier, which by definition claims
+  proximity under a different random stream and nothing more; the ledger says so. A calibrated
+  equivalence test is a ticket if a paper ever needs the stronger claim.
+- *`trust.sweeps` preserves the 5 % / 4.72 % mislabel.* Already recorded at T5.1; unchanged, by
+  design (the archive's output is the oracle).
+- *Threshold-20 sensitivity, external-validity checks and plausible values are not implemented.*
+  Correct and declared; SPEC.md's `irt` row is the scope and these are outside it. benchprobe is
+  not the complete analysis code behind the Price of Intelligence study and does not claim to be.
+- *Deduplication, ladder pooling, logistic form, unrecoverable bootstrap streams, fixed-parameter
+  penalty arithmetic, the two informations:* the reviewer verified each and **agrees**, with one
+  correction accepted — the fixed-parameter penalty is a reporting convention, not an archive
+  defect, and T6's section above should be read that way.
+
+**Louis's checklist item "cross-family QA sweep recorded" (handoff §9) is met by this section.**
+
 ## Open, assigned
 
 - Louis: confirm the recovered four-parameter logistic (T3) against the pre-registration text.
-- T6.1: Hessian-based convergence diagnostics for `benchprobe.irt` (see above).
+- Coordinating thread, JUDGe paper: the phrasing G-study Φ values and the single-phrasing sentence (T8, defect 7).
+- Ticket, unscheduled: `gstudy_two_way(single_condition=True)` for the one-phrasing dependability.
 - Coordinating thread: the panel's `score_scale`/`score_divisor` metadata for the four benchmarks
   above should be corrected at source, and `se_predicted_from_information` renamed or recomputed.
-- T8 remains open: the 10 September review was by Claude Code, a Claude model. The house rule is a different family (`docs/qa/T8_cross_family_brief.md`).
-- Ticket, unscheduled: hash `MANIFEST.json` itself, so a snapshot cannot be relabelled without failing.
 - v0.1: licence choice; CITATION.cff; commit author identity.

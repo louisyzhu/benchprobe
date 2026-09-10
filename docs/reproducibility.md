@@ -95,15 +95,26 @@ Locked in `tests/golden/test_price_of_intelligence.py`; whole file runs in 4 s.
 | Models with an anchor cell | 480 | theta_estimation.json | exact | recomputed | 480 | T6 |
 | Free parameters, stage 1 / stage 2 | 607 / 891 | theta_estimation.json | exact | recomputed | 607 / 891 | T6 |
 | Stage-1 objective (anchors only) | −1044.5802 | theta_estimation.json | 0.00005 | recomputed | −1044.58017655 | T6 |
-| Stage-1 residual scale | 0.30762771382713755 | theta_estimation.json | 1e-6 | recomputed | 0.30762771557809 | T6 |
+| Stage-1 residual scale | 0.30762771382713755 | theta_estimation.json | 1e-7 (1e-6 at T6) | recomputed | 0.30762771557809 | T6, T8 |
 | Stage-2 objective (full panel) | −1328.6389 | theta_estimation.json | 0.00005 | recomputed (priors on held-fixed coordinates excluded; see decisions) | −1328.63888738 | T6 |
-| Stage-2 residual scale | 0.44927472556854087 | theta_estimation.json | 1e-6 | recomputed | 0.44927473150302 | T6 |
-| Item difficulty, all 64 benchmarks | item_parameters.csv | item_parameters.csv | 5e-4 | recomputed | worst 7.6e-5 | T6 |
-| Item discrimination, all 64 benchmarks | item_parameters.csv | item_parameters.csv | 5e-4 | recomputed | worst 1.3e-5 | T6 |
+| Stage-2 residual scale | 0.44927472556854087 | theta_estimation.json | 1e-7 (1e-6 at T6) | recomputed | 0.44927473150302 | T6, T8 |
+| Item difficulty, all 64 benchmarks | item_parameters.csv | item_parameters.csv | 2e-4 (5e-4 at T6) | recomputed | worst 7.6e-5 | T6, T8 |
+| Item discrimination, all 64 benchmarks | item_parameters.csv | item_parameters.csv | 2e-4 (5e-4 at T6) | recomputed | worst 1.3e-5 | T6, T8 |
 | Ability θ, all 782 models | se_theta_structure.csv | se_theta_structure.csv | 1e-3 | recomputed | worst 3.3e-4 | T6 |
-| se(θ), all 782 models | se_theta_structure.csv | se_theta_structure.csv | 5e-4 | recomputed (cell information + ability prior) | worst 2.7e-5 | T6 |
-| Test information; se predicted from it | se_theta_structure.csv | se_theta_structure.csv | 5e-3; 5e-4 | recomputed (distinct-benchmark information — a different set from se(θ); finding, see decisions) | worst 8.7e-4; 2.9e-5 | T6 |
-| Mean discrimination per model | se_theta_structure.csv | se_theta_structure.csv | 5e-4 | recomputed (over distinct benchmarks) | worst 1.1e-5 | T6 |
+| se(θ), all 782 models | se_theta_structure.csv | se_theta_structure.csv | 2e-4 (5e-4 at T6) | recomputed (cell information + ability prior, the prior taken from the fit) | worst 2.7e-5 | T6, T8 |
+| Test information; se predicted from it | se_theta_structure.csv | se_theta_structure.csv | 5e-3; 2e-4 | recomputed (distinct-benchmark information — a different set from se(θ); finding, see decisions) | worst 8.7e-4; 2.9e-5 | T6 |
+| Mean discrimination per model | se_theta_structure.csv | se_theta_structure.csv | 2e-4 | recomputed (over distinct benchmarks) | worst 1.1e-5 | T6, T8 |
+| Hessian min / max eigenvalue, stage 1 | 0.040 / 19746.99 | theta_estimation.json | 1e-4 relative | recomputed (T6.1: central differences of the analytic gradient on the free block) | 0.040 / 19746.99 | T6.1 |
+| Hessian min / max eigenvalue, stage 2 | 0.086143 / 18740.29 | theta_estimation.json | 1e-4 relative | recomputed | 0.086145 / 18740.29 | T6.1 |
+| Condition number, stage 1 / 2 | 493675 / 217549 | theta_estimation.json | 1e-4 relative | recomputed | 493675 / 217544 | T6.1 |
+| Negative eigenvalues, both stages | 0 / 0 | theta_estimation.json | exact | recomputed | 0 / 0 | T6.1 |
+| Gradient, Newton decrement, ability step **at the archive's published point** | 5.4868e-5, 4.7873e-8, 3.4798e-4 | theta_estimation.json | 1e-2 relative | recomputed (benchprobe's objective evaluated at the solution assembled from the published tables; optimiser-independent) | 5.487e-5, 4.787e-8, 3.480e-4 | T8 |
+| Ability rank order | se_theta_structure.csv | se_theta_structure.csv | 0 reversals among pairs separated by > 1e-3; ≤ 5 overall | recomputed | 0 reversals in all 305,371 pairs | T8 |
+
+Why these tolerances (T8): the archive's published solution sits its own remaining Newton step from
+the optimum — 3.5e-4 on abilities, 7.5e-5 on difficulties, 2.5e-5 on log-discriminations — and the
+per-block deviations above are those steps to within 10 %. The tolerances are set from them, not
+from what passed; the derivation is in the golden test's docstring.
 
 Not reproduced, and not claimed: the archive's recorded `initial_objective` and
 `after_adam_objective` for stage 2 (10777.8325 / −1328.2421). Its stage-2 *starting point* is not

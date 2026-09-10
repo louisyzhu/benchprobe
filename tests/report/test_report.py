@@ -113,8 +113,23 @@ def test_quick_run_deterministic_tables_match_the_archive(quick_run):
     assert by_name["cluster_validation.csv"].tier == r.REGENERATED
     assert by_name["lobo_rung_summary.csv"].tier == r.REGENERATED  # fast path
     for name in ("h4_bootstrap_dmse.csv", "ksweep_rung_iv.csv"):  # not judged on the quick path
-        assert by_name[name].within_tolerance is None
-        assert "not judged" in " ".join(by_name[name].notes)
+        t = by_name[name]
+        assert t.within_tolerance is None and t.judged is False
+        # the caption says so in its opening clause, before naming the intended tier (T8)
+        assert t.caption.startswith(f"{name} — NOT JUDGED"), t.caption
+        assert "statistically reproduced by" not in t.caption
+    # tables with copied columns say which, in the opening clause
+    t = by_name["task1_structure_results.json"]
+    assert t.regenerated_columns and "EXCEPT logit_efa_factor1_share" in t.caption, t.caption
+    t = by_name["k_selection_evidence.csv"]
+    assert t.regenerated_columns == ["row BIC_min"] and "EXCEPT row BIC_min" in t.caption
+
+
+def test_compare_refuses_duplicate_keys():
+    a = pd.DataFrame({"k": ["x", "x"], "v": [1.0, 2.0]})
+    b = pd.DataFrame({"k": ["x", "x"], "v": [1.0, 2.0]})
+    with pytest.raises(ValueError, match="sharing a key"):
+        r.compare(a, b, keys=["k"])
 
 
 def test_cli_wires_config_and_flags(tmp_path, monkeypatch, capsys):

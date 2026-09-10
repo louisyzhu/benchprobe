@@ -4,7 +4,8 @@ Three families of function, one per programme layer: ``trust`` (reliability and 
 agreement), ``measure`` (factor structure and incremental validity; ``irt`` sits under it),
 ``predict`` (held-out designs and uncertainty for criterion studies), with ``io`` and ``report``
 serving all three. Scope is fixed by ``SPEC.md``; the locked acceptance numbers live in
-``tests/golden``.
+``tests/golden``. Extracted from archived code where the archive ships it; reconstructed, and
+labelled as such, where it does not (``docs/decisions.md``).
 
 In development. Nothing here ships before the day it is the analysis code behind a real study.
 """

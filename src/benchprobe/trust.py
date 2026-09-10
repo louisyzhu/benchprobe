@@ -440,8 +440,16 @@ def gstudy_two_way(X) -> GStudy:
     """Variance components of a fully crossed items × facet design (one observation per cell).
 
     Two-way random-effects ANOVA on an ``(n, R)`` matrix; negative estimates are truncated at zero.
-    ``Phi`` is the dependability for absolute decisions with one condition of the facet,
-    ``v_p / (v_p + (v_facet + v_e) / R)``, as the archive's phrasing G-study computes it.
+    ``Phi`` is ``v_p / (v_p + (v_facet + v_e) / R)``, exactly as the archive's phrasing G-study
+    computes it (rule 3: the archive's output is the oracle).
+
+    What that formula is (T8, Codex review, defect 7): dividing the facet and residual components
+    by ``R`` gives the dependability of a score *averaged over R conditions of the facet*
+    (Brennan's Φ with n′ = R). The archive's docstring describes it as the dependability when "a
+    deployment commits to one phrasing rather than averaging over R of them"; that reading
+    corresponds to ``v_p / (v_p + v_facet + v_e)`` instead, which is lower — by 0.05 to 0.19 on
+    the archive's four scenarios. benchprobe reproduces the number and records the discrepancy;
+    the single-condition form is a ticket, not a silent addition (docs/decisions.md, T8).
     """
     X = np.asarray(X, float)
     n, R = X.shape

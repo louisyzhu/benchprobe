@@ -1,8 +1,11 @@
 # benchprobe
 
-**In development.** benchprobe is the analysis layer behind Louis Zhu's evaluation papers, extracted
-from code that already produced published numbers and packaged so the same computation runs by one
-command on a fresh machine. Three families of function, one per programme layer: **trust**
+**In development.** benchprobe is the analysis layer behind Louis Zhu's evaluation papers, packaged
+so the same computation runs by one command on a fresh machine. Where an archive ships the code that
+produced its published numbers, benchprobe is an extraction of it; where it does not, benchprobe is a
+reconstruction validated against the published outputs, and every such place is named
+(`docs/decisions.md`): the logistic date-R² form and the ladder pooling rule of One Capability, the
+`compute_known` grid, and the whole of `benchprobe.irt`, whose archive ships no estimation code. Three families of function, one per programme layer: **trust**
 (reliability and grader agreement), **measure** (factor structure and incremental validity, with an
 IRT estimator underneath), **predict** (held-out designs and uncertainty for criterion studies).
 `SPEC.md` fixes the scope. It is a Python package; PyTorch is one optional dependency, for the IRT
@@ -55,7 +58,7 @@ Everything is configured by environment variable; nothing in the repository refe
 - `tests/smoke/` — imports every module, checks the vendored snapshots against their manifests, and
   checks the repository rules are in place. CI runs this test set (with the lint, the lockfile check
   and a collection-only pass over the golden tests), never the golden tests themselves.
-- `tests/golden/` — the locked numbers of the studies benchprobe is extracted from, each with its
+- `tests/golden/` — the locked numbers of the studies benchprobe reproduces, each with its
   tolerance. `test_one_capability.py` encodes the One Capability results on the 6 July 2026 snapshot
   (KMO 0.933, first-factor share 74.5 %, pooled LOBO ΔMSE +0.037, and the rest); `test_judge.py` the
   JUDGe real-bank quantities and simulations. These tests are the

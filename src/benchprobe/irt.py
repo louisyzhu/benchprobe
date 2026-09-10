@@ -52,11 +52,13 @@ from benchprobe.io import Snapshot, load_snapshot
 __all__ = [
     "PANEL_SNAPSHOT",
     "SCALE_REPAIR_BENCHMARKS",
+    "Convergence",
     "CrmFit",
     "Panel",
     "TwoStageFit",
     "ability_table",
     "build_panel",
+    "convergence_diagnostics",
     "estimation_spec",
     "fit_crm",
     "scale_repair_report",
@@ -96,11 +98,18 @@ def scale_repair_report(table: pd.DataFrame) -> pd.DataFrame:
     """Per-benchmark evidence on whether a recorded ``score_divisor`` has already been applied.
 
     For each benchmark the report gives the declared scale and divisor, the largest stored score,
-    and ``share_already_divided``: the fraction of stored scores that are *bit-for-bit* equal to
-    ``round(score * 100, 2) / 100``. A value stored as a two-decimal percentage divided by 100
-    reproduces that expression exactly, floating-point residue and all; a value stored as a native
-    ratio of counts does so only by coincidence. ``needs_repair`` is true where the divisor is not
-    1, no score exceeds 1, and every score carries the division signature.
+    and ``share_on_two_decimal_percent_grid``: the fraction of stored scores that are *bit-for-bit*
+    equal to ``round(score * 100, 2) / 100``.
+
+    What that test proves, and what it does not (T8, Codex review): it is a test of **grid
+    membership** — that the stored value is the double nearest to some k/10000 — not of the
+    value's history. A native ratio of counts lands on that grid whenever its denominator divides
+    10000, and about 60 % of the panel's other cells do. The evidence for the repair is therefore
+    not any single cell but the joint pattern: all 221 cells of the four declared-percentage
+    benchmarks on the grid, against a 60 % background rate (a chance of order 1e-50), together with
+    no score above 1 and the published fit reproducing only when the divisor is not applied. The
+    name of the column says what is measured; ``needs_repair`` is true where the divisor is not 1,
+    no score exceeds 1, and every score lies on the grid.
 
     The report is descriptive. Nothing in it changes a number; :func:`build_panel` decides.
     """
@@ -123,7 +132,7 @@ def scale_repair_report(table: pd.DataFrame) -> pd.DataFrame:
                 "declared_scale": declared[0] if len(declared) == 1 else "|".join(declared),
                 "declared_divisor": divisor_value,
                 "max_score": float(np.max(values)),
-                "share_already_divided": signature,
+                "share_on_two_decimal_percent_grid": signature,
                 "needs_repair": bool(
                     divisor_value not in (1.0,)
                     and np.isfinite(divisor_value)
@@ -212,6 +221,20 @@ def build_panel(
         n_rows_repaired = int(mask.sum())
 
     proportion = frame["score"].to_numpy(dtype=float) / divisor.to_numpy(dtype=float)
+    outside = ~((proportion >= 0.0) & (proportion <= 1.0))
+    if outside.any():
+        bad = frame.loc[outside, ["model_id", "benchmark_id", "score", "score_divisor"]].head(5)
+        raise ValueError(
+            f"{int(outside.sum())} cell(s) fall outside [0, 1] after dividing by the recorded "
+            f"scale; the panel is not the archive's, or a divisor is wrong. First rows:\n"
+            f"{bad.to_string(index=False)}"
+        )
+    # The archive reports 89 cells "squeezed from the boundary" and its estimation note says they
+    # "sat at exactly 0 or 1" (docs/phase2-1-estimation.md §5). Counted on that definition the
+    # panel has 88: one cell (glm-5.2_unknown on gbaeval_external, score 1/5807 = 0.000172) lies
+    # inside epsilon without being on the boundary, and the archive's own count includes it. So the
+    # archive counted the cells its clip moved, and the prose is off by one. benchprobe reproduces
+    # the recorded count, on the rule that reproduces it (T8, Codex review; docs/decisions.md).
     n_squeezed = int(np.sum((proportion <= eps) | (proportion >= 1.0 - eps)))
     proportion = np.clip(proportion, eps, 1.0 - eps)
 
@@ -253,18 +276,43 @@ def build_panel(
 
 
 @dataclass(frozen=True, eq=False)
+class Convergence:
+    """The archive's convergence criterion, evaluated on the free parameter block (T6.1).
+
+    Judged on the Hessian spectrum and the Newton decrement rather than on a raw gradient, for
+    the reason the archive gives (``docs/phase2-1-estimation.md`` §4): curvature differs by orders
+    of magnitude across parameter blocks, so an absolute gradient bound is slack on one block and
+    punishing on another, and an earlier specification of theirs reported a small gradient at a
+    saddle point. ``converged`` is true when every eigenvalue on the free block is positive, the
+    Newton decrement ``gᵀH⁻¹g`` is below 1e-3, and the largest remaining Newton step on any ability
+    is below 1e-3 — the archive's stated rule, verbatim.
+    """
+
+    min_eigenvalue: float
+    max_eigenvalue: float
+    n_negative_eigenvalues: int
+    condition_number: float
+    newton_decrement: float
+    predicted_objective_improvement: float
+    max_remaining_theta_step: float
+    max_abs_gradient: float
+    converged: bool
+    lbfgs_success: bool
+
+    criterion: str = (
+        "all Hessian eigenvalues positive on the free block AND |Newton decrement| < 0.001 AND "
+        "largest remaining theta step < 0.001"
+    )
+
+
+@dataclass(frozen=True, eq=False)
 class CrmFit:
     """One penalised maximum-a-posteriori fit of the continuous response model.
 
-    ``converged`` is L-BFGS's own success flag, and ``max_abs_gradient`` the largest absolute
-    gradient at the solution. **This is a weaker claim than the archive's.** The archive judges
-    convergence on the Newton decrement and the Hessian spectrum — deliberately, because an
-    earlier specification of theirs reported a small gradient at a saddle point
-    (``docs/phase2-1-estimation.md`` §4) — and an absolute gradient bound is exactly the criterion
-    they rejected as punishing on one parameter block and slack on another. benchprobe does not
-    compute the Hessian, so ``converged`` here does not establish what the archive's ``converged``
-    establishes; the agreement of the fitted parameters with the published ones does. Recorded as
-    an open ticket rather than glossed (docs/decisions.md, 2026-09-10).
+    ``converged`` is the archive's criterion (:class:`Convergence`), not the optimiser's own
+    success flag; the flag is kept as ``convergence.lbfgs_success``. ``priors`` are the penalty
+    scales this fit was made with, so anything derived from it (standard errors, in particular)
+    uses the same prior rather than a global default (T8, Codex review, defect 9).
     """
 
     theta: np.ndarray
@@ -277,11 +325,16 @@ class CrmFit:
     max_abs_gradient: float
     n_free_parameters: int
     n_lbfgs_closure_evaluations: int
-    converged: bool
+    convergence: Convergence
+    priors: dict[str, float]
     models: tuple[str, ...]
     items: tuple[str, ...]
     free_models: np.ndarray
     free_items: np.ndarray
+
+    @property
+    def converged(self) -> bool:
+        return self.convergence.converged
 
     @property
     def residual_sd(self) -> float:
@@ -372,6 +425,69 @@ def _adam(x: np.ndarray, args: tuple, steps: int, lr: float) -> np.ndarray:
     return x
 
 
+def _free_index(free_models: np.ndarray, free_items: np.ndarray, M: int, K: int) -> np.ndarray:
+    """Positions in the packed vector of the coordinates a fit may move."""
+    theta = np.flatnonzero(free_models)
+    log_a = M + np.flatnonzero(free_items)
+    difficulty = M + K + np.flatnonzero(free_items)
+    return np.concatenate([theta, log_a, difficulty, [M + 2 * K]])
+
+
+def convergence_diagnostics(
+    x: np.ndarray, args: tuple, free: np.ndarray, M: int, *, lbfgs_success: bool, step: float = 1e-5
+) -> Convergence:
+    """Hessian spectrum and Newton decrement on the free block, by central differences of the
+    analytic gradient.
+
+    The gradient is exact, so the Hessian error is O(step²) — far below the scale of anything
+    judged here (eigenvalues of order 1e-2 and up; a decrement threshold of 1e-3). The free block
+    is at most a few thousand coordinates, so the dense matrix is cheap.
+    """
+    n = len(free)
+    H = np.empty((n, n))
+    for j, idx in enumerate(free):
+        xp = x.copy()
+        xp[idx] += step
+        xm = x.copy()
+        xm[idx] -= step
+        gp = _objective_and_gradient(xp, *args)[1][free]
+        gm = _objective_and_gradient(xm, *args)[1][free]
+        H[:, j] = (gp - gm) / (2.0 * step)
+    H = 0.5 * (H + H.T)
+    g = _objective_and_gradient(x, *args)[1]
+    g_free = g[free]
+    eig = np.linalg.eigvalsh(H)
+    n_negative = int(np.sum(eig <= 0.0))
+    if n_negative == 0:
+        newton_step = np.linalg.solve(H, g_free)
+        decrement = float(g_free @ newton_step)
+    else:  # not a local minimum; the decrement is undefined as a distance to one
+        newton_step = np.full(n, np.nan)
+        decrement = float("nan")
+    theta_positions = free < M
+    max_theta_step = (
+        float(np.max(np.abs(newton_step[theta_positions]))) if theta_positions.any() else 0.0
+    )
+    converged = bool(
+        n_negative == 0
+        and abs(decrement) < 1e-3
+        and max_theta_step < 1e-3
+        and np.isfinite(decrement)
+    )
+    return Convergence(
+        min_eigenvalue=float(eig.min()),
+        max_eigenvalue=float(eig.max()),
+        n_negative_eigenvalues=n_negative,
+        condition_number=float(eig.max() / eig.min()) if eig.min() > 0 else float("inf"),
+        newton_decrement=decrement,
+        predicted_objective_improvement=0.5 * decrement,
+        max_remaining_theta_step=max_theta_step,
+        max_abs_gradient=float(np.max(np.abs(g))),
+        converged=converged,
+        lbfgs_success=bool(lbfgs_success),
+    )
+
+
 def fit_crm(
     panel: Panel,
     *,
@@ -423,6 +539,10 @@ def fit_crm(
     )
     _, gradient = _objective_and_gradient(result.x, *args)
     n_free = int(np.sum(free_models)) + 2 * int(np.sum(free_items)) + 1
+    free = _free_index(args[3], args[4], panel.M, panel.K)
+    diagnostics = convergence_diagnostics(
+        result.x, args, free, panel.M, lbfgs_success=bool(result.success)
+    )
     return CrmFit(
         theta=result.x[: panel.M].copy(),
         difficulty=result.x[panel.M + panel.K : panel.M + 2 * panel.K].copy(),
@@ -434,7 +554,8 @@ def fit_crm(
         max_abs_gradient=float(np.max(np.abs(gradient))),
         n_free_parameters=n_free,
         n_lbfgs_closure_evaluations=int(result.nfev),
-        converged=bool(result.success),
+        convergence=diagnostics,
+        priors={k: float(v) for k, v in scales.items()},
         models=panel.models,
         items=panel.items,
         free_models=np.asarray(free_models, dtype=bool).copy(),
@@ -477,20 +598,28 @@ class TwoStageFit:
             "n_models_with_anchor_cell": self.n_models_with_anchor_cell,
             "reference_item": self.reference_item,
             "anchors": list(self.anchors),
-            "stage1": {
-                "final_objective": self.stage1.objective,
-                "residual_sd": self.stage1.residual_sd,
-                "n_free_parameters": self.stage1.n_free_parameters,
-                "max_abs_gradient": self.stage1.max_abs_gradient,
-            },
-            "stage2": {
-                "final_objective": self.stage2.objective,
-                "residual_sd": self.stage2.residual_sd,
-                "n_free_parameters": self.stage2.n_free_parameters,
-                "max_abs_gradient": self.stage2.max_abs_gradient,
-            },
+            "stage1": _stage_summary(self.stage1),
+            "stage2": _stage_summary(self.stage2),
             "provenance": self.panel.provenance,
         }
+
+
+def _stage_summary(fit: CrmFit) -> dict[str, Any]:
+    c = fit.convergence
+    return {
+        "final_objective": fit.objective,
+        "residual_sd": fit.residual_sd,
+        "n_free_parameters": fit.n_free_parameters,
+        "max_abs_gradient": fit.max_abs_gradient,
+        "hessian_min_eigenvalue": c.min_eigenvalue,
+        "hessian_max_eigenvalue": c.max_eigenvalue,
+        "hessian_n_negative_eigenvalues": c.n_negative_eigenvalues,
+        "hessian_condition_number": c.condition_number,
+        "newton_decrement": c.newton_decrement,
+        "max_remaining_theta_step": c.max_remaining_theta_step,
+        "converged": c.converged,
+        "convergence_criterion": c.criterion,
+    }
 
 
 def two_stage_link(
@@ -587,7 +716,7 @@ def ability_table(fit: TwoStageFit, *, theta_prior_sd: float | None = None) -> p
     prior_sd = (
         float(theta_prior_sd)
         if theta_prior_sd is not None
-        else float(estimation_spec()["penalty_scales"]["theta_prior_sd"])
+        else float(fit.stage2.priors["theta_prior_sd"])
     )
     a = fit.stage2.discrimination
     inv_var = float(np.exp(-2.0 * fit.stage2.log_sigma))

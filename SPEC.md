@@ -6,9 +6,12 @@ ticket adds it (rule 4).
 
 ## 0. What benchprobe is, and is not
 
-It is the analysis layer behind the evaluation papers and the MSc thesis pipeline, extracted from code
-that already produced published numbers, packaged so the same computation runs by one command on a
-fresh machine. Three families of function, one per programme layer: **trust** (reliability and grader
+It is the analysis layer behind the evaluation papers and the MSc thesis pipeline, packaged so the
+same computation runs by one command on a fresh machine. It is extracted from the archived code where
+an archive ships the code that produced its numbers; where one does not, it is a reconstruction
+validated against the published outputs and labelled as such (T8 wording: the "extracted from"
+column below names the archive each module reproduces, not a promise that every function in it has
+a line-for-line counterpart — `docs/decisions.md` lists the reconstructions). Three families of function, one per programme layer: **trust** (reliability and grader
 agreement), **measure** (factor structure and incremental validity), **predict** (held-out designs and
 uncertainty for criterion studies). An IRT estimator sits under measure.
 
@@ -229,7 +232,7 @@ names kept. Verdict matrices are `(n_items, K)` 0/1 arrays; totals are `(n_items
 
 **`benchprobe.irt`** (confirmed at T6) — `SCALE_REPAIR_BENCHMARKS`; `estimation_spec(snapshot=None,
 key="primary")`; `scale_repair_report(table) -> DataFrame` (per benchmark: `declared_scale`,
-`declared_divisor`, `max_score`, `share_already_divided`, `needs_repair`);
+`declared_divisor`, `max_score`, `share_on_two_decimal_percent_grid`, `needs_repair`);
 `build_panel(snapshot=None, *, epsilon=None, repair_scale=True) -> Panel` with `.frame`, `.models`,
 `.items`, `.y`, `.n_cells`, `.M`, `.K`, `.n_squeezed`, `.repaired`, `.n_rows_repaired`,
 `.provenance`; `fit_crm(panel, *, free_models, free_items, cells=None, start=None, priors=None,

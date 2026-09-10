@@ -35,7 +35,7 @@ def test_the_repair_signature_separates_the_two_groups(snapshot):
     no flagged score exceeds 1; the rest carry it only by coincidence."""
     report = irt.scale_repair_report(snapshot.table).set_index("benchmark_id")
     flagged = report.loc[list(irt.SCALE_REPAIR_BENCHMARKS)]
-    assert (flagged["share_already_divided"] == 1.0).all()
+    assert (flagged["share_on_two_decimal_percent_grid"] == 1.0).all()
     assert (flagged["max_score"] <= 1.0).all()
     assert (flagged["declared_divisor"] == 100.0).all()
     others = report.drop(index=list(irt.SCALE_REPAIR_BENCHMARKS))
@@ -124,6 +124,97 @@ def test_fit_crm_recovers_parameters_it_generated():
     assert np.corrcoef(fit.theta, theta)[0, 1] > 0.99
     assert 0.15 < fit.residual_sd < 0.3
     assert fit.n_free_parameters == panel.M + 2 * int(free_items.sum()) + 1
+
+
+def test_analytic_gradient_matches_central_differences():
+    """The gradient is hand-derived; this is the check the T8 review asked for."""
+    frame, *_ = _synthetic_panel(2)
+    m_of = frame.model_id.str[1:].astype(int).to_numpy()
+    k_of = frame.benchmark_id.str[1:].astype(int).to_numpy()
+    y = np.log(frame.score / (1 - frame.score)).to_numpy()
+    M, K = 60, 6
+    rng = np.random.default_rng(3)
+    x = rng.normal(0, 0.5, M + 2 * K + 1)
+    free_models = np.ones(M, dtype=bool)
+    free_items = np.ones(K, dtype=bool)
+    free_items[0] = False
+    args = (m_of, k_of, y, free_models, free_items, M, K, 25.0, 25.0, 2.25)
+    _, g = irt._objective_and_gradient(x, *args)
+    h = 1e-6
+    fd = np.empty_like(x)
+    for j in range(len(x)):
+        xp, xm = x.copy(), x.copy()
+        xp[j] += h
+        xm[j] -= h
+        fd[j] = (
+            irt._objective_and_gradient(xp, *args)[0] - irt._objective_and_gradient(xm, *args)[0]
+        ) / (2 * h)
+    # fixed coordinates: the analytic gradient is zeroed by design; the objective's own
+    # derivative there is the prior term, which is what the finite difference sees
+    fixed = np.zeros_like(x, dtype=bool)
+    fixed[M] = True  # log a of item 0
+    fixed[M + K] = True  # difficulty of item 0
+    assert np.max(np.abs(g[~fixed] - fd[~fixed])) < 1e-5 * (1 + np.max(np.abs(fd[~fixed])))
+    assert np.all(g[fixed] == 0.0)
+
+
+def test_convergence_is_judged_on_the_hessian_not_the_optimiser_flag():
+    frame, *_ = _synthetic_panel(4)
+    panel = irt.Panel(
+        frame=frame,
+        models=tuple(sorted(frame.model_id.unique())),
+        items=tuple(sorted(frame.benchmark_id.unique())),
+        model_of_cell=frame.model_id.str[1:].astype(int).to_numpy(),
+        item_of_cell=frame.benchmark_id.str[1:].astype(int).to_numpy(),
+        y=np.log(frame.score / (1 - frame.score)).to_numpy(),
+        epsilon=0.001,
+        n_squeezed=0,
+        repaired=(),
+        n_rows_repaired=0,
+    )
+    free_items = np.ones(panel.K, dtype=bool)
+    free_items[0] = False
+    fit = irt.fit_crm(
+        panel, free_models=np.ones(panel.M, dtype=bool), free_items=free_items, adam_steps=800
+    )
+    c = fit.convergence
+    assert c.n_negative_eigenvalues == 0
+    assert c.min_eigenvalue > 0
+    assert abs(c.newton_decrement) < 1e-3
+    assert c.max_remaining_theta_step < 1e-3
+    assert c.converged and fit.converged
+    assert isinstance(c.lbfgs_success, bool)
+    assert fit.priors == {
+        "theta_prior_sd": 5.0,
+        "difficulty_prior_sd": 5.0,
+        "log_discrimination_prior_sd": 1.5,
+    }
+    # a point that is not a minimum must not be called converged
+    x_bad = np.zeros(panel.M + 2 * panel.K + 1)
+    args = (
+        panel.model_of_cell,
+        panel.item_of_cell,
+        panel.y,
+        np.ones(panel.M, dtype=bool),
+        free_items,
+        panel.M,
+        panel.K,
+        25.0,
+        25.0,
+        2.25,
+    )
+    free = irt._free_index(np.ones(panel.M, dtype=bool), free_items, panel.M, panel.K)
+    bad = irt.convergence_diagnostics(x_bad, args, free, panel.M, lbfgs_success=True)
+    assert not bad.converged and bad.lbfgs_success
+
+
+def test_build_panel_refuses_a_score_outside_the_unit_interval(snapshot):
+    table = snapshot.table.copy()
+    i = table.index[table["score"].notna()][0]
+    table.loc[i, "score"] = 1.5
+    fake = type(snapshot)(**{**snapshot.__dict__, "table": table})
+    with pytest.raises(ValueError, match="outside \\[0, 1\\]"):
+        irt.build_panel(fake)
 
 
 def test_a_penalty_on_a_fixed_parameter_does_not_enter_the_objective():

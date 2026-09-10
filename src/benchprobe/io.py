@@ -1,8 +1,11 @@
 """Input layer: hash-pinned snapshot loading, provenance record, coverage rules, named grids.
 
 SPEC.md §1 scope; signatures in SPEC.md §2 (T2). Snapshots vendored under
-``benchprobe/data/<name>/`` carry a ``MANIFEST.json`` whose SHA-256 is verified on every load; a
-mismatch raises :class:`SnapshotIntegrityError` and is never downgraded to a warning. The named
+``benchprobe/data/<name>/`` carry a ``MANIFEST.json`` listing every file with its SHA-256 and size;
+each listed file is verified against it on every load, and a mismatch raises
+:class:`SnapshotIntegrityError`, never downgraded to a warning. The manifest itself is **not**
+authenticated by the loader — a file and its manifest entry can be changed together — so each
+golden test module pins the SHA-256 of the manifest it depends on (T8). The named
 grids (SPEC.md §3) reproduce the row selections of the One Capability archive
 (``frontier-ai-economic-validity``, ``notebook/analysis.ipynb``), including its base-model
 deduplication, verbatim.
