@@ -95,6 +95,12 @@ without a ticket that says so.
 - k-sweep intervals compared before rounding (as the H4 table already was), with rerun alignment by key rather than row order; text columns copied from the archive (`ksweep_rung_iv.csv` `note`, `k_selection_evidence.csv` `detail`) declared in the captions — coordinating session.
 - Stable sorts in `io.deduplicate_by_base_model` and `predict.ladder`; a constant factor score on a training fold raises in `predict._build_rungs` instead of skipping the sign flip; `trust.agreement_with_interval` raises on an empty bootstrap; `report` removes its own stale output files before writing — coordinating session; none changes a number on the archive grids (the deduplicated grid has no ties, checked by the reviewer).
 
+## 2026-09-10 — repository published, CI first run
+
+- `main` and the ten ticket branches pushed to `github.com/louisyzhu/benchprobe`, private (21 commits on `main`, tip `02f1dd7`) — Louis, 10 September 2026; the "in development" surface rule keeps it private until the v0.1 tag. This closes the M0-report item "the GitHub Actions workflow has not run: no repository on GitHub yet".
+- Action pins verified against GitHub's actual tag lists on the day of the push: `actions/checkout` publishes `v1`–`v7` and `astral-sh/setup-uv` publishes `v1`–`v7`, so the workflow's `@v4` and `@v6` both resolve — coordinating session; this was the open "could not be verified from the sandbox" note in `docs/decisions.md` (T0) and it is now closed. Newer majors exist and are not adopted: the pinned ones work and a bump is scope without a ticket (rule 4).
+- `workflow_dispatch` added to the workflow triggers — coordinating session; GitHub Actions was disabled at the repository level when the code was first pushed, so no run started, and a manual trigger is what lets CI be started (and re-started) without an empty commit.
+
 ## Open, assigned
 
 - Louis: confirm the recovered four-parameter logistic (T3) against the pre-registration text.
