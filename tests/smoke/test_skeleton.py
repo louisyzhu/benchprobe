@@ -68,6 +68,49 @@ def test_claude_md_carries_the_ten_rules_verbatim():
         assert actual == expected, f"rule {number} differs from the handoff text:\n{actual}"
 
 
+def _workflows() -> list[Path]:
+    d = REPO / ".github" / "workflows"
+    return sorted(list(d.glob("*.yml")) + list(d.glob("*.yaml"))) if d.is_dir() else []
+
+
+def test_workflows_exist():
+    assert _workflows(), "no workflow files under .github/workflows/"
+
+
+@pytest.mark.parametrize("path", _workflows(), ids=lambda p: p.name)
+def test_workflow_is_valid_yaml_and_well_formed(path):
+    """A workflow that has never been parsed is a claim about state nobody has checked.
+
+    GitHub rejected `.github/workflows/ci.yml` on its first run (10 September 2026) for an
+    unquoted colon inside a step name, which YAML reads as a nested mapping. This test is the
+    guard: it parses every workflow and requires each step name to still be a string.
+    """
+    yaml = pytest.importorskip("yaml")
+    try:
+        doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:  # pragma: no cover - the failure this test exists to catch
+        pytest.fail(f"{path.name} is not valid YAML: {exc}")
+    assert isinstance(doc, dict), f"{path.name} does not parse to a mapping"
+    # PyYAML follows YAML 1.1 and reads a bare `on` key as the boolean True; GitHub reads it as
+    # the string "on". Accept either so the test checks the workflow, not the parser's version.
+    triggers = doc.get("on", doc.get(True))
+    assert triggers, f"{path.name} declares no triggers"
+    assert doc.get("jobs"), f"{path.name} declares no jobs"
+    for job_name, job in doc["jobs"].items():
+        assert job.get("steps"), f"{path.name}: job {job_name} has no steps"
+        for i, step in enumerate(job["steps"]):
+            assert isinstance(step, dict), f"{path.name}: job {job_name} step {i} is not a mapping"
+            assert "uses" in step or "run" in step, (
+                f"{path.name}: job {job_name} step {i} has neither `uses` nor `run` — the usual "
+                "cause is an unquoted ': ' inside the step name"
+            )
+            if "name" in step:
+                assert isinstance(step["name"], str), (
+                    f"{path.name}: job {job_name} step {i} has a non-string name "
+                    f"({step['name']!r}); quote it"
+                )
+
+
 def _manifests():
     return sorted((PACKAGE / "data").glob("*/MANIFEST.json"))
 

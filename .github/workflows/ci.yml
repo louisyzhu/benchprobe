@@ -18,7 +18,7 @@ jobs:
         run: uv sync --locked
       - name: Lint
         run: uv run ruff check .
-      - name: Smoke test (rule 6: under a minute)
+      - name: "Smoke test (rule 6: under a minute)"
         run: uv run pytest -m smoke
-      - name: Golden tests collect (never run here; they are run by ticket and pasted verbatim)
+      - name: "Golden tests collect (never run here; run by ticket, pasted verbatim)"
         run: uv run pytest -m golden --collect-only -q
