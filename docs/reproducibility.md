@@ -18,7 +18,9 @@ The One Capability acceptance rows (handoff §6) are encoded in `tests/golden/te
 (T1) with the tolerances below; each row carries the tier and the recomputed value from the ticket
 that computed it (T2 grids, T3 measure, T4 predict). "Archive file" is where the value was verified on
 6 September 2026 (`frontier-ai-economic-validity`, commit `946ce845`). Last full run:
-`uv run pytest -m golden` on `main` after T7, 31 passed in 2894 s (48 min), covering all three studies' rows; the KMO note below is the one warning.
+`uv run pytest -m golden` on `t6-irt` after T6, **39 passed in 3008 s (50 min)**, covering all three
+studies' rows; the KMO note below is the one warning. (Previous: 31 passed in 2894 s on `main` after
+T7; T6 adds the eight Price of Intelligence rows, which take 4 s of the total.)
 
 | Output | Grid | Archive value | Archive file | Tolerance | Tier | Recomputed | Ticket |
 |---|---|---|---|---|---|---|---|
