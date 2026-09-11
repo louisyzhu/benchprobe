@@ -9,6 +9,7 @@ authors:
     given-names: Louis Yiven
     orcid: "https://orcid.org/0009-0001-5579-0340"
 license: MIT
+doi: "10.5281/zenodo.22705351"
 repository-code: "https://github.com/louisyzhu/benchprobe"
 abstract: >-
   A Python library for the psychometric analysis of AI benchmark scores: reliability and grader
