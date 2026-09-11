@@ -3,7 +3,7 @@ message: "If you use benchprobe, cite this release by version and the study whos
 title: "benchprobe: psychometrics for AI benchmark scores"
 type: software
 version: 0.1.0
-date-released: "YYYY-MM-DD"
+date-released: "2026-09-11"
 authors:
   - family-names: Zhu
     given-names: Louis Yiven
