@@ -1,0 +1,68 @@
+name: verify-pypi
+
+# After a successful release run, installs the published version from PyPI in a clean job and
+# checks the import reports it. Can also be started by hand from the Actions tab.
+on:
+  workflow_run:
+    workflows: [release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to verify (blank: read pyproject.toml on the chosen ref)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Resolve version
+        id: version
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          if [ -n "$INPUT_VERSION" ]; then
+            VERSION="$INPUT_VERSION"
+          else
+            VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Verifying benchprobe==$VERSION"
+      - name: "Install from PyPI (retries ~5 minutes for index propagation)"
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          python -m venv "$RUNNER_TEMP/venv"
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if "$RUNNER_TEMP/venv/bin/pip" install --no-cache-dir --index-url https://pypi.org/simple "benchprobe==$VERSION"; then
+              exit 0
+            fi
+            echo "Attempt $attempt failed; retrying in 30 s"
+            sleep 30
+          done
+          echo "::error::benchprobe==$VERSION could not be installed from PyPI after 10 attempts"
+          exit 1
+      - name: Import reports the expected version
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        working-directory: ${{ runner.temp }}
+        run: |
+          FOUND=$("$RUNNER_TEMP/venv/bin/python" -c "import benchprobe; print(benchprobe.__version__)")
+          echo "benchprobe.__version__ = $FOUND"
+          if [ "$FOUND" != "$VERSION" ]; then
+            echo "::error::Installed benchprobe reports $FOUND, expected $VERSION"
+            exit 1
+          fi

@@ -1,0 +1,61 @@
+name: release
+
+# Publishes to PyPI by Trusted Publishing (OIDC; no token stored in the repository). Fires only
+# when the owner publishes a GitHub release; the `pypi` environment adds a manual approval gate.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    # The full suite includes the golden set (11-70 minutes on a laptop; docs/reproducibility.md).
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v7
+      - name: "Release check: versions agree, tree clean, changelog entry"
+        run: uv run --locked python scripts/release_check.py
+      - name: Install (locked)
+        run: uv sync --locked
+      - name: "Full test suite (smoke, golden and slow)"
+        run: uv run pytest
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: pypi
+      url: https://pypi.org/project/benchprobe/
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v7
+      - name: Tag matches pyproject version
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          VERSION=$(uv run --no-project python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          if [ "$TAG" != "v$VERSION" ]; then
+            echo "::error::Release tag '$TAG' does not match 'v' + pyproject version 'v$VERSION'. Refusing to publish."
+            exit 1
+          fi
+          echo "Tag $TAG matches pyproject version $VERSION"
+      - name: Build sdist and wheel
+        run: uv build
+      - name: Check distribution metadata
+        run: uvx --from twine==7.0.0 twine check --strict dist/*
+      - name: Publish to PyPI (Trusted Publishing)
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086  # v1.14.3

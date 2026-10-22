@@ -2,6 +2,8 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22705351.svg)](https://doi.org/10.5281/zenodo.22705351)
 
+**Install:** `pip install benchprobe`
+
 **A Python psychometrics library for AI benchmark scores.** Give it a model × benchmark matrix and
 it answers four questions the evaluation literature keeps asking by hand:
 

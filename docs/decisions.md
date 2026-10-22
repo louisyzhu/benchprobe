@@ -409,3 +409,22 @@ Judgement calls made:
 - Coordinating thread: the panel's `score_scale`/`score_divisor` metadata for the four benchmarks
   above should be corrected at source, and `se_predicted_from_information` renamed or recomputed.
 - v0.1: licence choice; CITATION.cff; commit author identity.
+
+# T9 — release automation (2026-10-22)
+
+PyPI by Trusted Publishing for the first PyPI version, 0.1.1 (packaging and docs only; v0.1.0 stays
+GitHub/Zenodo only). Judgement calls made:
+
+- **The release gate runs the full suite, golden and slow included.** The "golden never in CI"
+  rule (v0.1 section above) is about the per-push `ci.yml`, which is unchanged. A release is rare
+  and is exactly the moment a dependency drift should be caught, so `release.yml`'s test job runs
+  plain `uv run pytest` with a 180-minute timeout. If GitHub's runners prove too slow, the fallback
+  is `-m "not slow"`, recorded here before it is taken.
+- **`__version__` is read from installed metadata,** so the version lives in `pyproject.toml` only;
+  `scripts/release_check.py` checks the installed value, `CITATION.cff` and a `CHANGELOG.md`
+  heading against it, and that the tree is clean.
+- **Publishing is gated three ways:** a GitHub release must be published by the owner, the tag must
+  equal `v` + the pyproject version, and the `pypi` environment's approval. Nothing is tagged or
+  released by an agent (rule 10).
+- **Pins:** `pypa/gh-action-pypi-publish` by full commit SHA (v1.14.3), `twine==7.0.0`; the
+  first-party `actions/*` and `astral-sh/setup-uv` by major tag, matching `ci.yml`.

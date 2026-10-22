@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: "If you use benchprobe, cite this release by version and the study whose numbers you rely on."
 title: "benchprobe: psychometrics for AI benchmark scores"
 type: software
-version: 0.1.0
-date-released: "2026-09-11"
+version: 0.1.1
+date-released: "2026-10-22"
 authors:
   - family-names: Zhu
     given-names: Louis Yiven
